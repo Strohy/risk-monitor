@@ -1,0 +1,21 @@
+scenarios:
+  price_shocks:
+    - -0.05  # -5% mild correction
+    - -0.10  # -10% moderate correction
+    - -0.15  # -15% significant drop
+    - -0.20  # -20% severe drop
+    - -0.30  # -30% crash scenario
+    - -0.40  # -40% black swan
+    - -0.50  # -50% extreme black swan
+
+risk_scoring_weights:
+  utilization: 0.20
+  liquidation_clustering: 0.30
+  concentration: 0.25
+  oracle_sensitivity: 0.25
+
+thresholds:
+  high_utilization: 0.90  # 90%+
+  liquidation_buffer: 1.10  # HF < 1.10 considered at risk
+  high_concentration: 0.50  # Top 5 > 50% of debt
+  cliff_detection: 10.0  # % risk increase to flag as cliff
