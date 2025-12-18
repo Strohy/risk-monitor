@@ -1,0 +1,35 @@
+# Dune Query IDs Configuration
+#
+
+queries:
+  # Positions query - shows all open borrowing positions
+  # SQL source: queries/positions.sql
+  positions: 6376249
+
+  # Collateral query - shows collateral balances
+  # SQL source: queries/collateral.sql
+  collateral: 6376265
+
+  # Pool state query - shows pool metrics over time
+  # SQL source: queries/pool_state.sql
+  pool_state: 6376279
+
+  # Liquidations query - shows historical liquidation events
+  # SQL source: queries/liquidations.sql
+  liquidations: 6376302
+
+  # Token prices query - gets current token prices
+  # SQL source: queries/prices.sql
+  prices: 6376312 
+
+# Market IDs to use in queries
+# These are used as parameters when executing the queries
+markets:
+  wstETH_USDC: "0xc54d7acf14de29e0e5527cabd7a576506870346a78a11a6762e2cca66322ec41"
+  WETH_USDC: "0xb323495f7e4148be5643a4ea4a8221eef163e4bccfdedc2a6f4696baacbc86cc"
+
+# Token addresses for price queries
+tokens:
+  wstETH: "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+  USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+  WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"

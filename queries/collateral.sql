@@ -1,23 +1,33 @@
 -- Get collateral balances for borrowers
--- This retrieves the latest collateral amounts for each position
+-- Aggregates SupplyCollateral and WithdrawCollateral events to calculate net collateral
 
-WITH latest_collateral AS (
+WITH supply_collateral AS (
     SELECT
-        market_id,
+        id as market_id,
         onBehalf as borrower,
-        assets as collateral,
-        evt_block_time as block_time,
-        ROW_NUMBER() OVER (PARTITION BY market_id, onBehalf ORDER BY evt_block_time DESC) as rn
-    FROM morpho_ethereum.MorphoBlue_evt_SupplyCollateral
-    WHERE market_id IN ({{market_ids}})
-        AND evt_block_time >= NOW() - INTERVAL '7' DAY
+        SUM(CAST(assets AS DOUBLE)) as total_supplied,
+        MAX(evt_block_time) as last_supply_time
+    FROM morpho_blue_ethereum.MorphoBlue_evt_SupplyCollateral
+    WHERE id IN ({{market_ids}})
+    GROUP BY id, onBehalf
+),
+withdraw_collateral AS (
+    SELECT
+        id as market_id,
+        onBehalf as borrower,
+        SUM(CAST(assets AS DOUBLE)) as total_withdrawn
+    FROM morpho_blue_ethereum.MorphoBlue_evt_WithdrawCollateral
+    WHERE id IN ({{market_ids}})
+    GROUP BY id, onBehalf
 )
 SELECT
-    market_id,
-    borrower,
-    collateral,
-    block_time
-FROM latest_collateral
-WHERE rn = 1
-    AND collateral > 0
+    s.market_id as id,
+    s.borrower,
+    GREATEST(s.total_supplied - COALESCE(w.total_withdrawn, 0), 0) as collateral,
+    s.last_supply_time as block_time
+FROM supply_collateral s
+LEFT JOIN withdraw_collateral w
+    ON s.market_id = w.market_id
+    AND s.borrower = w.borrower
+WHERE GREATEST(s.total_supplied - COALESCE(w.total_withdrawn, 0), 0) > 0
 ORDER BY collateral DESC

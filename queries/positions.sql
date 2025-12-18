@@ -1,27 +1,37 @@
 -- Get all open positions for Morpho Blue markets
--- This aggregates supply and borrow events to calculate current position state
+-- Aggregates borrow and repay events to calculate net outstanding debt
 
-WITH latest_positions AS (
+WITH borrow_events AS (
     SELECT
-        id,
-        market_id,
-        user as borrower,
-        shares_balance,
-        assets_balance,
-        evt_block_time as block_time,
-        ROW_NUMBER() OVER (PARTITION BY market_id, user ORDER BY evt_block_time DESC) as rn
-    FROM morpho_ethereum.MorphoBlue_evt_Borrow
-    WHERE market_id IN ({{market_ids}})
-        AND evt_block_time >= NOW() - INTERVAL '7' DAY
+        id as market_id,
+        onBehalf as borrower,
+        SUM(CAST(assets AS DOUBLE)) as total_borrowed,
+        SUM(CAST(shares AS DOUBLE)) as total_borrow_shares,
+        MAX(evt_block_time) as last_borrow_time
+    FROM morpho_blue_ethereum.MorphoBlue_evt_Borrow
+    WHERE id IN ({{market_ids}})
+    GROUP BY id, onBehalf
+),
+repay_events AS (
+    SELECT
+        id as market_id,
+        onBehalf as borrower,
+        SUM(CAST(assets AS DOUBLE)) as total_repaid,
+        SUM(CAST(shares AS DOUBLE)) as total_repay_shares
+    FROM morpho_blue_ethereum.MorphoBlue_evt_Repay
+    WHERE id IN ({{market_ids}})
+    GROUP BY id, onBehalf
 )
 SELECT
-    market_id,
-    borrower,
-    shares_balance as borrow_shares,
-    assets_balance as borrow_assets,
-    block_time
-FROM latest_positions
-WHERE rn = 1
-    AND shares_balance > 0
-ORDER BY shares_balance DESC
+    b.market_id as id,
+    b.borrower,
+    GREATEST(b.total_borrowed - COALESCE(r.total_repaid, 0), 0) as borrow_assets,
+    GREATEST(b.total_borrow_shares - COALESCE(r.total_repay_shares, 0), 0) as borrow_shares,
+    b.last_borrow_time as block_time
+FROM borrow_events b
+LEFT JOIN repay_events r
+    ON b.market_id = r.market_id
+    AND b.borrower = r.borrower
+WHERE GREATEST(b.total_borrowed - COALESCE(r.total_repaid, 0), 0) > 0
+ORDER BY borrow_assets DESC
 LIMIT 1000
