@@ -18,3 +18,31 @@ pools:
     lltv: 0.915
     priority: 2
     description: "High volume core lending pair for comparison"
+
+  - name: "WBTC/USDC"
+    market_id: "0x6d3d5c6a9e4f5c6b5d8d9e4f5c6b5d8d9e4f5c6b5d8d9e4f5c6b5d8d9e4f5c60x3a85e619751152991742810df6ec69ce473daef99e28a64ab2340d7b7ccfee49"
+    collateral: "WBTC"
+    collateral_address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C5990x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
+    loan: "USDC"
+    loan_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB480xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    lltv: 0.86
+    priority: 3
+    # description: "High volume core lending pair for comparison"
+
+  - name: "wstETH/WETH"
+    market_id: "0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e"
+    collateral: "wstETH"
+    collateral_address: "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca00x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+    loan: "WETH"
+    loan_address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc20xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+    lltv: 0.965
+    priority: 4
+
+  - name: "AA_FalconXUSDC/USDC"
+    market_id: "0xe83d72fa5b00dcd46d9e0e860d95aa540d5ec106da5833108a9f826f21f36f52"
+    collateral: "AA_FalconXUSDC"
+    collateral_address: "0xC26A6Fa2C37b38E549a4a1807543801Db684f99C"
+    loan: "USDC"
+    loan_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    lltv: 0.77
+    priority: 5
