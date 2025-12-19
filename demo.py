@@ -28,6 +28,7 @@ from src.data.cache import DataCache
 from src.state.reconstructor import StateReconstructor
 from src.metrics import RiskMetrics
 from src.stress import StressTestEngine
+from src.scoring import RiskScorer
 
 # ANSI color codes for pretty output
 class Colors:
@@ -313,6 +314,7 @@ def calculate_risk_metrics(snapshot):
     """Calculate and display risk metrics"""
     print_header("Risk Metrics Analysis")
 
+    risk_metrics = None
     try:
         # Initialize risk metrics calculator
         risk_metrics = RiskMetrics(snapshot)
@@ -375,11 +377,14 @@ def calculate_risk_metrics(snapshot):
         import traceback
         print(traceback.format_exc())
 
+    return risk_metrics
+
 
 def run_stress_tests(snapshot):
     """Run stress tests and display results"""
     print_header("Stress Testing")
 
+    stress_engine = None
     try:
         # Initialize stress test engine
         stress_engine = StressTestEngine(snapshot)
@@ -479,6 +484,86 @@ def run_stress_tests(snapshot):
         import traceback
         print(traceback.format_exc())
 
+    return stress_engine
+
+
+def calculate_risk_score(snapshot, risk_metrics, stress_engine):
+    """Calculate and display composite risk score"""
+    print_header("Risk Score Calculation")
+
+    try:
+        # Initialize risk scorer
+        scorer = RiskScorer(risk_metrics, stress_engine)
+        print_success("Initialized risk scorer")
+        print()
+
+        # Calculate composite score
+        composite_score = scorer.calculate_composite_score()
+        risk_level = scorer.get_risk_level(composite_score)
+
+        # Get component scores
+        component_scores = scorer.get_component_scores()
+
+        # Display composite score with color coding
+        if risk_level == "CRITICAL":
+            color = Colors.FAIL
+        elif risk_level == "HIGH":
+            color = Colors.WARNING
+        elif risk_level == "MODERATE":
+            color = Colors.OKCYAN
+        else:
+            color = Colors.OKGREEN
+
+        print(f"{Colors.BOLD}Composite Risk Score:{Colors.ENDC}")
+        print(f"{color}  {composite_score:.1f} / 100  ({risk_level}){Colors.ENDC}")
+        print()
+
+        # Display component scores
+        print(f"{Colors.BOLD}Component Scores:{Colors.ENDC}")
+        for component, score in component_scores.items():
+            weight = scorer.weights[component] * 100
+            contribution = score * scorer.weights[component]
+
+            # Color code each component
+            if score >= 70:
+                comp_color = Colors.FAIL
+            elif score >= 50:
+                comp_color = Colors.WARNING
+            else:
+                comp_color = Colors.OKCYAN
+
+            print(f"{comp_color}  {component.replace('_', ' ').title()}: {score:.1f} / 100{Colors.ENDC} "
+                  f"(weight: {weight:.0f}%, contributes {contribution:.1f})")
+
+        print()
+
+        # Risk level interpretation
+        print(f"{Colors.BOLD}Risk Assessment:{Colors.ENDC}")
+        if composite_score >= 80:
+            print_error("CRITICAL: This pool has severe risk factors requiring immediate attention")
+        elif composite_score >= 65:
+            print_warning("HIGH RISK: Significant risk factors detected, close monitoring recommended")
+        elif composite_score >= 45:
+            print_info("MODERATE RISK: Some risk factors present, regular monitoring advised")
+        elif composite_score >= 25:
+            print_success("LOW RISK: Pool appears relatively healthy with minor risk factors")
+        else:
+            print_success("MINIMAL RISK: Pool appears very healthy")
+
+        print()
+
+        # Highlight top risk factor
+        sorted_components = sorted(component_scores.items(), key=lambda x: x[1], reverse=True)
+        if sorted_components[0][1] > 60:
+            print_warning(f"Primary concern: {sorted_components[0][0].replace('_', ' ').title()} "
+                         f"(score: {sorted_components[0][1]:.1f})")
+            print()
+
+    except Exception as e:
+        print_error(f"Failed to calculate risk score: {e}")
+        import traceback
+        print(traceback.format_exc())
+
 
 def save_snapshot_to_file(snapshot, reconstructor):
     """Save snapshot to file"""
@@ -523,7 +608,7 @@ def main():
         fetcher, cache = initialize_clients(use_cache=True)
 
         # Step 3: Select pool to analyze (use first pool)
-        pool_config = pools[3]
+        pool_config = pools[0]
         print_info(f"\nAnalyzing pool: {pool_config['name']}")
 
         # Step 4: Fetch data
@@ -553,10 +638,14 @@ def main():
         analyze_snapshot(snapshot)
 
         # Step 6b: Calculate risk metrics
-        calculate_risk_metrics(snapshot)
+        risk_metrics = calculate_risk_metrics(snapshot)
 
         # Step 6c: Run stress tests
-        run_stress_tests(snapshot)
+        stress_engine = run_stress_tests(snapshot)
+
+        # Step 6d: Calculate risk score
+        if risk_metrics and stress_engine:
+            calculate_risk_score(snapshot, risk_metrics, stress_engine)
 
         # Step 7: Save snapshot
         save_snapshot_to_file(snapshot, reconstructor)
@@ -571,16 +660,16 @@ def main():
         print_info("  ✓ Saved snapshot to file")
         print()
 
-        print(f"{Colors.OKGREEN}Phases 4-5 Complete!{Colors.ENDC}")
+        print(f"{Colors.OKGREEN}Phases 4-6 Complete!{Colors.ENDC}")
         print_info("  ✓ Risk metrics calculated (concentration, HF distribution)")
         print_info("  ✓ Stress tests executed (price shock scenarios)")
-        print_info("  ✓ Cliff points and cascading risk analyzed")
+        print_info("  ✓ Composite risk score computed")
         print()
 
         print(f"{Colors.OKGREEN}Ready for next phases:{Colors.ENDC}")
-        print_info("  → Phase 6: Risk Scoring Framework")
-        print_info("  → Phase 7: Report Generation")
+        print_info("  → Phase 7: Report Generation (HTML + charts)")
         print_info("  → Phase 8: CLI & Automation")
+        print_info("  → Phase 9: Written Analysis")
         print()
 
     except KeyboardInterrupt:
