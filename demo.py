@@ -26,6 +26,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 from src.data.dune_client import MorphoDataFetcher
 from src.data.cache import DataCache
 from src.state.reconstructor import StateReconstructor
+from src.metrics import RiskMetrics
+from src.stress import StressTestEngine
 
 # ANSI color codes for pretty output
 class Colors:
@@ -307,6 +309,177 @@ def analyze_snapshot(snapshot):
         print_warning(f"Minimum price drop to trigger liquidations: {min_drop * 100:.2f}%")
 
 
+def calculate_risk_metrics(snapshot):
+    """Calculate and display risk metrics"""
+    print_header("Risk Metrics Analysis")
+
+    try:
+        # Initialize risk metrics calculator
+        risk_metrics = RiskMetrics(snapshot)
+        print_success("Initialized risk metrics calculator")
+        print()
+
+        # Concentration Metrics
+        print(f"{Colors.BOLD}Concentration Risk:{Colors.ENDC}")
+        concentration = risk_metrics.concentration_metrics()
+        print_info(f"Top 5 Borrowers: {concentration['top_5_pct']:.1f}% of debt (${concentration['top_5_debt_usd']:,.2f})")
+        print_info(f"Top 10 Borrowers: {concentration['top_10_pct']:.1f}% of debt (${concentration['top_10_debt_usd']:,.2f})")
+        print_info(f"Gini Coefficient: {risk_metrics.gini_coefficient():.3f}")
+        print_info(f"Herfindahl Index: {risk_metrics.herfindahl_index():.0f}")
+        print()
+
+        # Health Factor Distribution
+        print(f"{Colors.BOLD}Health Factor Distribution:{Colors.ENDC}")
+        hf_dist = risk_metrics.health_factor_distribution()
+        print_info(f"HF < 1.05 (Critical): {hf_dist['hf_below_1.05']:.1f}% of debt")
+        print_info(f"HF 1.05-1.1 (At Risk): {hf_dist['hf_1.05_to_1.1']:.1f}% of debt")
+        print_info(f"HF 1.1-1.2 (Warning): {hf_dist['hf_1.1_to_1.2']:.1f}% of debt")
+        print_info(f"HF 1.2-1.5 (Moderate): {hf_dist['hf_1.2_to_1.5']:.1f}% of debt")
+        print_info(f"HF > 1.5 (Healthy): {hf_dist['hf_above_1.5']:.1f}% of debt")
+        print()
+
+        # Weighted Average Health Factor
+        weighted_hf = risk_metrics.weighted_avg_health_factor()
+        print(f"{Colors.BOLD}Health Factor Analysis:{Colors.ENDC}")
+        print_info(f"Weighted Average HF: {weighted_hf:.3f}")
+
+        liquidation_buffer = risk_metrics.liquidation_buffer_percentage(1.1)
+        print_info(f"Liquidation Buffer (HF < 1.1): {liquidation_buffer:.1f}% of debt")
+
+        at_risk = risk_metrics.positions_at_risk(1.1)
+        print_info(f"Positions at Risk: {len(at_risk)}")
+        print()
+
+        # Position Size Distribution
+        print(f"{Colors.BOLD}Position Size Distribution:{Colors.ENDC}")
+        size_dist = risk_metrics.position_size_distribution()
+        print_info(f"Micro (<$10k): {size_dist['micro_below_10k']} positions")
+        print_info(f"Small ($10k-$100k): {size_dist['small_10k_to_100k']} positions")
+        print_info(f"Medium ($100k-$1M): {size_dist['medium_100k_to_1m']} positions")
+        print_info(f"Large ($1M-$10M): {size_dist['large_1m_to_10m']} positions")
+        print_info(f"Whale (>$10M): {size_dist['whale_above_10m']} positions")
+        print()
+
+        # Risk assessment
+        if concentration['top_5_pct'] > 50:
+            print_warning(f"High concentration risk: Top 5 borrowers control {concentration['top_5_pct']:.1f}% of debt")
+
+        if liquidation_buffer > 10:
+            print_warning(f"Significant liquidation risk: {liquidation_buffer:.1f}% of debt has HF < 1.1")
+
+        if weighted_hf < 1.5:
+            print_warning(f"Low overall health: Weighted HF is {weighted_hf:.3f}")
+
+    except Exception as e:
+        print_error(f"Failed to calculate risk metrics: {e}")
+        import traceback
+        print(traceback.format_exc())
+
+
+def run_stress_tests(snapshot):
+    """Run stress tests and display results"""
+    print_header("Stress Testing")
+
+    try:
+        # Initialize stress test engine
+        stress_engine = StressTestEngine(snapshot)
+        print_success("Initialized stress test engine")
+        print_info(f"Testing {len(stress_engine.scenarios)} price shock scenarios")
+        print()
+
+        # Run all scenarios
+        print(f"{Colors.BOLD}Running Scenarios:{Colors.ENDC}")
+        results_df = stress_engine.run_all_scenarios()
+
+        # Display results table
+        for _, row in results_df.iterrows():
+            shock = row['price_shock_pct']
+            positions = row['liquidatable_positions']
+            debt_risk = row['debt_at_risk_usd']
+            pct_affected = row['pct_pool_affected']
+            bad_debt = row['bad_debt_potential_usd']
+
+            # Color code based on severity
+            if pct_affected > 50:
+                color = Colors.FAIL
+            elif pct_affected > 20:
+                color = Colors.WARNING
+            else:
+                color = Colors.OKCYAN
+
+            print(f"{color}  {shock:+5.0f}% shock: {int(positions):3d} positions liquidatable, "
+                  f"${debt_risk:>12,.0f} at risk ({pct_affected:5.1f}%), "
+                  f"${bad_debt:>10,.0f} bad debt{Colors.ENDC}")
+
+        print()
+
+        # Analyze cliff points
+        print(f"{Colors.BOLD}Cliff Point Analysis:{Colors.ENDC}")
+        cliffs = stress_engine.find_cliff_points(results_df)
+
+        if cliffs:
+            print_warning(f"Found {len(cliffs)} cliff points (sharp risk increases)")
+            print()
+            for cliff in cliffs:
+                print_warning(
+                    f"  Between {cliff['from_shock_pct']:+.0f}% and {cliff['to_shock_pct']:+.0f}%: "
+                    f"{cliff['risk_jump_pct']:.0f}% risk increase "
+                    f"({cliff['new_liquidations']} new liquidations)"
+                )
+        else:
+            print_success("No cliff points detected - risk increases smoothly")
+
+        print()
+
+        # Cascading risk analysis
+        print(f"{Colors.BOLD}Cascading Risk Analysis:{Colors.ENDC}")
+        cascading = stress_engine.analyze_cascading_risk()
+
+        if cascading['has_severe_cliffs']:
+            print_warning(f"Severe cascading risk detected!")
+            worst_cliff = cascading['worst_cliff']
+            if worst_cliff:
+                print_warning(
+                    f"Worst cliff: {worst_cliff['risk_jump_pct']:.0f}% increase "
+                    f"between {worst_cliff['from_shock_pct']:.0f}% and {worst_cliff['to_shock_pct']:.0f}%"
+                )
+        else:
+            print_success("No severe cascading risk detected")
+
+        print_info(f"Average risk increase per scenario: {cascading['avg_risk_increase_per_scenario']:.2f}%")
+        print_info(f"Maximum risk increase per scenario: {cascading['max_risk_increase_per_scenario']:.2f}%")
+        print()
+
+        # Find liquidation thresholds
+        print(f"{Colors.BOLD}Liquidation Thresholds:{Colors.ENDC}")
+        threshold_10 = stress_engine.get_liquidation_threshold(10.0)
+        threshold_50 = stress_engine.get_liquidation_threshold(50.0)
+
+        if threshold_10:
+            print_info(f"10% of pool at risk at: {threshold_10:+.0f}% price shock")
+        else:
+            print_success("10% threshold not reached in tested scenarios")
+
+        if threshold_50:
+            print_warning(f"50% of pool at risk at: {threshold_50:+.0f}% price shock")
+        else:
+            print_success("50% threshold not reached in tested scenarios")
+
+        print()
+
+        # Risk warnings
+        if threshold_10 and abs(threshold_10) < 15:
+            print_warning(f"High risk: 10% of pool liquidatable with only {abs(threshold_10):.0f}% price drop")
+
+        if cascading['cliff_points_count'] > 2:
+            print_warning(f"Multiple cliff points detected - positions clustered at similar health factors")
+
+    except Exception as e:
+        print_error(f"Failed to run stress tests: {e}")
+        import traceback
+        print(traceback.format_exc())
+
+
 def save_snapshot_to_file(snapshot, reconstructor):
     """Save snapshot to file"""
     print_header("Saving Snapshot")
@@ -350,7 +523,7 @@ def main():
         fetcher, cache = initialize_clients(use_cache=True)
 
         # Step 3: Select pool to analyze (use first pool)
-        pool_config = pools[0]
+        pool_config = pools[3]
         print_info(f"\nAnalyzing pool: {pool_config['name']}")
 
         # Step 4: Fetch data
@@ -379,6 +552,12 @@ def main():
         # Step 6: Analyze snapshot
         analyze_snapshot(snapshot)
 
+        # Step 6b: Calculate risk metrics
+        calculate_risk_metrics(snapshot)
+
+        # Step 6c: Run stress tests
+        run_stress_tests(snapshot)
+
         # Step 7: Save snapshot
         save_snapshot_to_file(snapshot, reconstructor)
 
@@ -392,11 +571,16 @@ def main():
         print_info("  ✓ Saved snapshot to file")
         print()
 
+        print(f"{Colors.OKGREEN}Phases 4-5 Complete!{Colors.ENDC}")
+        print_info("  ✓ Risk metrics calculated (concentration, HF distribution)")
+        print_info("  ✓ Stress tests executed (price shock scenarios)")
+        print_info("  ✓ Cliff points and cascading risk analyzed")
+        print()
+
         print(f"{Colors.OKGREEN}Ready for next phases:{Colors.ENDC}")
-        print_info("  → Phase 4: Risk Metrics Engine")
-        print_info("  → Phase 5: Stress Testing")
-        print_info("  → Phase 6: Risk Scoring")
+        print_info("  → Phase 6: Risk Scoring Framework")
         print_info("  → Phase 7: Report Generation")
+        print_info("  → Phase 8: CLI & Automation")
         print()
 
     except KeyboardInterrupt:
