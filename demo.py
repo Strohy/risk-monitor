@@ -30,16 +30,17 @@ from src.metrics import RiskMetrics
 from src.stress import StressTestEngine
 from src.scoring import RiskScorer
 
+
 # ANSI color codes for pretty output
 class Colors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
 
 
 def print_header(text):
@@ -79,10 +80,10 @@ def load_configuration():
         print_error(f"Configuration file not found: {config_path}")
         sys.exit(1)
 
-    with open(config_path, 'r') as f:
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
 
-    pools = config['pools']
+    pools = config["pools"]
     print_success(f"Loaded configuration for {len(pools)} pools")
 
     for pool in pools:
@@ -97,7 +98,7 @@ def initialize_clients(use_cache=True):
 
     # Load environment
     load_dotenv()
-    api_key = os.getenv('DUNE_API_KEY')
+    api_key = os.getenv("DUNE_API_KEY")
 
     if not api_key:
         print_error("DUNE_API_KEY not found in environment")
@@ -118,7 +119,7 @@ def initialize_clients(use_cache=True):
 
         # Show cache info
         cache_info = cache.get_cache_info()
-        if cache_info['num_files'] > 0:
+        if cache_info["num_files"] > 0:
             print_info(f"  Found {cache_info['num_files']} cached files")
     else:
         cache = None
@@ -129,14 +130,11 @@ def initialize_clients(use_cache=True):
 
 def fetch_pool_data(fetcher, cache, pool_config):
     """Fetch data for a specific pool"""
-    pool_name = pool_config['name']
+    pool_name = pool_config["name"]
     print_header(f"Fetching Data: {pool_name}")
 
-    market_ids = [pool_config['market_id']]
-    token_addresses = [
-        pool_config['collateral_address'],
-        pool_config['loan_address']
-    ]
+    market_ids = [pool_config["market_id"]]
+    token_addresses = [pool_config["collateral_address"], pool_config["loan_address"]]
 
     # Try cache first
     if cache:
@@ -152,7 +150,7 @@ def fetch_pool_data(fetcher, cache, pool_config):
 
             # Convert prices back to dict if cached as DataFrame
             if prices is not None and not isinstance(prices, dict):
-                prices = prices.to_dict('records')[0] if len(prices) > 0 else {}
+                prices = prices.to_dict("records")[0] if len(prices) > 0 else {}
 
             return positions_df, collateral_df, pool_state_df, prices
 
@@ -174,6 +172,7 @@ def fetch_pool_data(fetcher, cache, pool_config):
         print_info("  Fetching pool state...")
         pool_state_df = fetcher.fetch_pool_state(market_ids)
         print_success(f"  Retrieved {len(pool_state_df)} pool state records")
+        print(f"  Pool state: {pool_state_df.head()}")
 
         # Fetch prices
         print_info("  Fetching token prices...")
@@ -181,7 +180,11 @@ def fetch_pool_data(fetcher, cache, pool_config):
         print_success(f"  Retrieved prices for {len(prices)} tokens")
 
         for addr, price in prices.items():
-            token = pool_config['collateral'] if addr.lower() == pool_config['collateral_address'].lower() else pool_config['loan']
+            token = (
+                pool_config["collateral"]
+                if addr.lower() == pool_config["collateral_address"].lower()
+                else pool_config["loan"]
+            )
             print_info(f"    {token}: ${price:,.2f}")
 
         # Cache the results
@@ -193,6 +196,7 @@ def fetch_pool_data(fetcher, cache, pool_config):
 
             # Cache prices as DataFrame for consistency
             import pandas as pd
+
             cache.set(f"prices_{pool_config['market_id']}", pd.DataFrame([prices]))
             print_success("Data cached successfully")
 
@@ -205,7 +209,7 @@ def fetch_pool_data(fetcher, cache, pool_config):
 
 def reconstruct_state(pool_config, positions_df, collateral_df, pool_state_df, prices):
     """Reconstruct pool state from raw data"""
-    pool_name = pool_config['name']
+    pool_name = pool_config["name"]
     print_header(f"Reconstructing State: {pool_name}")
 
     try:
@@ -216,10 +220,7 @@ def reconstruct_state(pool_config, positions_df, collateral_df, pool_state_df, p
         # Create snapshot
         print_info("Creating pool snapshot...")
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            pool_state_df,
-            timestamp=datetime.now()
+            positions_df, collateral_df, pool_state_df, timestamp=datetime.now()
         )
 
         print_success("Snapshot created successfully")
@@ -250,8 +251,12 @@ def analyze_snapshot(snapshot):
 
     print(f"{Colors.BOLD}Positions:{Colors.ENDC}")
     print_info(f"Total Positions: {snapshot.num_positions}")
-    print_info(f"Healthy Positions: {snapshot.num_healthy_positions} ({snapshot.num_healthy_positions/snapshot.num_positions*100:.1f}%)")
-    print_info(f"Unhealthy Positions: {snapshot.num_unhealthy_positions} ({snapshot.num_unhealthy_positions/snapshot.num_positions*100:.1f}%)")
+    print_info(
+        f"Healthy Positions: {snapshot.num_healthy_positions} ({snapshot.num_healthy_positions/snapshot.num_positions*100:.1f}%)"
+    )
+    print_info(
+        f"Unhealthy Positions: {snapshot.num_unhealthy_positions} ({snapshot.num_unhealthy_positions/snapshot.num_positions*100:.1f}%)"
+    )
     print()
 
     print(f"{Colors.BOLD}Collateral & Debt:{Colors.ENDC}")
@@ -271,7 +276,7 @@ def analyze_snapshot(snapshot):
         ("Critical (HF < 1.05)", 0.0, 1.05),
         ("At Risk (1.05 - 1.10)", 1.05, 1.10),
         ("Warning (1.10 - 1.20)", 1.10, 1.20),
-        ("Healthy (HF > 1.20)", 1.20, float('inf'))
+        ("Healthy (HF > 1.20)", 1.20, float("inf")),
     ]
 
     for label, min_hf, max_hf in buckets:
@@ -291,7 +296,9 @@ def analyze_snapshot(snapshot):
 
     for i, position in enumerate(top_borrowers, 1):
         borrower_short = f"{position.borrower[:6]}...{position.borrower[-4:]}"
-        print_info(f"{i}. {borrower_short}: ${position.debt_value_usd:,.2f} debt, HF={position.health_factor:.3f}")
+        print_info(
+            f"{i}. {borrower_short}: ${position.debt_value_usd:,.2f} debt, HF={position.health_factor:.3f}"
+        )
 
     print()
 
@@ -302,11 +309,13 @@ def analyze_snapshot(snapshot):
         print_warning(f"{len(risky_positions)} positions are within 10% of liquidation")
 
         total_risky_debt = sum(p.debt_value_usd for p in risky_positions)
-        risky_debt_pct = (total_risky_debt / snapshot.total_debt_usd * 100)
+        risky_debt_pct = total_risky_debt / snapshot.total_debt_usd * 100
         print_warning(f"${total_risky_debt:,.2f} in debt at risk ({risky_debt_pct:.1f}% of pool)")
 
         # Show price drop needed
-        min_drop = min(p.liquidation_price_drop_pct() for p in risky_positions if p.health_factor > 1.0)
+        min_drop = min(
+            p.liquidation_price_drop_pct() for p in risky_positions if p.health_factor > 1.0
+        )
         print_warning(f"Minimum price drop to trigger liquidations: {min_drop * 100:.2f}%")
 
 
@@ -324,8 +333,12 @@ def calculate_risk_metrics(snapshot):
         # Concentration Metrics
         print(f"{Colors.BOLD}Concentration Risk:{Colors.ENDC}")
         concentration = risk_metrics.concentration_metrics()
-        print_info(f"Top 5 Borrowers: {concentration['top_5_pct']:.1f}% of debt (${concentration['top_5_debt_usd']:,.2f})")
-        print_info(f"Top 10 Borrowers: {concentration['top_10_pct']:.1f}% of debt (${concentration['top_10_debt_usd']:,.2f})")
+        print_info(
+            f"Top 5 Borrowers: {concentration['top_5_pct']:.1f}% of debt (${concentration['top_5_debt_usd']:,.2f})"
+        )
+        print_info(
+            f"Top 10 Borrowers: {concentration['top_10_pct']:.1f}% of debt (${concentration['top_10_debt_usd']:,.2f})"
+        )
         print_info(f"Gini Coefficient: {risk_metrics.gini_coefficient():.3f}")
         print_info(f"Herfindahl Index: {risk_metrics.herfindahl_index():.0f}")
         print()
@@ -363,11 +376,15 @@ def calculate_risk_metrics(snapshot):
         print()
 
         # Risk assessment
-        if concentration['top_5_pct'] > 50:
-            print_warning(f"High concentration risk: Top 5 borrowers control {concentration['top_5_pct']:.1f}% of debt")
+        if concentration["top_5_pct"] > 50:
+            print_warning(
+                f"High concentration risk: Top 5 borrowers control {concentration['top_5_pct']:.1f}% of debt"
+            )
 
         if liquidation_buffer > 10:
-            print_warning(f"Significant liquidation risk: {liquidation_buffer:.1f}% of debt has HF < 1.1")
+            print_warning(
+                f"Significant liquidation risk: {liquidation_buffer:.1f}% of debt has HF < 1.1"
+            )
 
         if weighted_hf < 1.5:
             print_warning(f"Low overall health: Weighted HF is {weighted_hf:.3f}")
@@ -375,6 +392,7 @@ def calculate_risk_metrics(snapshot):
     except Exception as e:
         print_error(f"Failed to calculate risk metrics: {e}")
         import traceback
+
         print(traceback.format_exc())
 
     return risk_metrics
@@ -398,11 +416,11 @@ def run_stress_tests(snapshot):
 
         # Display results table
         for _, row in results_df.iterrows():
-            shock = row['price_shock_pct']
-            positions = row['liquidatable_positions']
-            debt_risk = row['debt_at_risk_usd']
-            pct_affected = row['pct_pool_affected']
-            bad_debt = row['bad_debt_potential_usd']
+            shock = row["price_shock_pct"]
+            positions = row["liquidatable_positions"]
+            debt_risk = row["debt_at_risk_usd"]
+            pct_affected = row["pct_pool_affected"]
+            bad_debt = row["bad_debt_potential_usd"]
 
             # Color code based on severity
             if pct_affected > 50:
@@ -412,9 +430,11 @@ def run_stress_tests(snapshot):
             else:
                 color = Colors.OKCYAN
 
-            print(f"{color}  {shock:+5.0f}% shock: {int(positions):3d} positions liquidatable, "
-                  f"${debt_risk:>12,.0f} at risk ({pct_affected:5.1f}%), "
-                  f"${bad_debt:>10,.0f} bad debt{Colors.ENDC}")
+            print(
+                f"{color}  {shock:+5.0f}% shock: {int(positions):3d} positions liquidatable, "
+                f"${debt_risk:>12,.0f} at risk ({pct_affected:5.1f}%), "
+                f"${bad_debt:>10,.0f} bad debt{Colors.ENDC}"
+            )
 
         print()
 
@@ -440,9 +460,9 @@ def run_stress_tests(snapshot):
         print(f"{Colors.BOLD}Cascading Risk Analysis:{Colors.ENDC}")
         cascading = stress_engine.analyze_cascading_risk()
 
-        if cascading['has_severe_cliffs']:
+        if cascading["has_severe_cliffs"]:
             print_warning(f"Severe cascading risk detected!")
-            worst_cliff = cascading['worst_cliff']
+            worst_cliff = cascading["worst_cliff"]
             if worst_cliff:
                 print_warning(
                     f"Worst cliff: {worst_cliff['risk_jump_pct']:.0f}% increase "
@@ -451,8 +471,12 @@ def run_stress_tests(snapshot):
         else:
             print_success("No severe cascading risk detected")
 
-        print_info(f"Average risk increase per scenario: {cascading['avg_risk_increase_per_scenario']:.2f}%")
-        print_info(f"Maximum risk increase per scenario: {cascading['max_risk_increase_per_scenario']:.2f}%")
+        print_info(
+            f"Average risk increase per scenario: {cascading['avg_risk_increase_per_scenario']:.2f}%"
+        )
+        print_info(
+            f"Maximum risk increase per scenario: {cascading['max_risk_increase_per_scenario']:.2f}%"
+        )
         print()
 
         # Find liquidation thresholds
@@ -474,14 +498,19 @@ def run_stress_tests(snapshot):
 
         # Risk warnings
         if threshold_10 and abs(threshold_10) < 15:
-            print_warning(f"High risk: 10% of pool liquidatable with only {abs(threshold_10):.0f}% price drop")
+            print_warning(
+                f"High risk: 10% of pool liquidatable with only {abs(threshold_10):.0f}% price drop"
+            )
 
-        if cascading['cliff_points_count'] > 2:
-            print_warning(f"Multiple cliff points detected - positions clustered at similar health factors")
+        if cascading["cliff_points_count"] > 2:
+            print_warning(
+                f"Multiple cliff points detected - positions clustered at similar health factors"
+            )
 
     except Exception as e:
         print_error(f"Failed to run stress tests: {e}")
         import traceback
+
         print(traceback.format_exc())
 
     return stress_engine
@@ -532,8 +561,10 @@ def calculate_risk_score(snapshot, risk_metrics, stress_engine):
             else:
                 comp_color = Colors.OKCYAN
 
-            print(f"{comp_color}  {component.replace('_', ' ').title()}: {score:.1f} / 100{Colors.ENDC} "
-                  f"(weight: {weight:.0f}%, contributes {contribution:.1f})")
+            print(
+                f"{comp_color}  {component.replace('_', ' ').title()}: {score:.1f} / 100{Colors.ENDC} "
+                f"(weight: {weight:.0f}%, contributes {contribution:.1f})"
+            )
 
         print()
 
@@ -542,7 +573,9 @@ def calculate_risk_score(snapshot, risk_metrics, stress_engine):
         if composite_score >= 80:
             print_error("CRITICAL: This pool has severe risk factors requiring immediate attention")
         elif composite_score >= 65:
-            print_warning("HIGH RISK: Significant risk factors detected, close monitoring recommended")
+            print_warning(
+                "HIGH RISK: Significant risk factors detected, close monitoring recommended"
+            )
         elif composite_score >= 45:
             print_info("MODERATE RISK: Some risk factors present, regular monitoring advised")
         elif composite_score >= 25:
@@ -555,13 +588,16 @@ def calculate_risk_score(snapshot, risk_metrics, stress_engine):
         # Highlight top risk factor
         sorted_components = sorted(component_scores.items(), key=lambda x: x[1], reverse=True)
         if sorted_components[0][1] > 60:
-            print_warning(f"Primary concern: {sorted_components[0][0].replace('_', ' ').title()} "
-                         f"(score: {sorted_components[0][1]:.1f})")
+            print_warning(
+                f"Primary concern: {sorted_components[0][0].replace('_', ' ').title()} "
+                f"(score: {sorted_components[0][1]:.1f})"
+            )
             print()
 
     except Exception as e:
         print_error(f"Failed to calculate risk score: {e}")
         import traceback
+
         print(traceback.format_exc())
 
 
@@ -574,8 +610,8 @@ def save_snapshot_to_file(snapshot, reconstructor):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Generate filename
-    timestamp = snapshot.timestamp.strftime('%Y%m%d_%H%M%S')
-    pool_name_safe = snapshot.pool_name.replace('/', '-')
+    timestamp = snapshot.timestamp.strftime("%Y%m%d_%H%M%S")
+    pool_name_safe = snapshot.pool_name.replace("/", "-")
     filename = f"{pool_name_safe}_{timestamp}.json"
     output_path = output_dir / filename
 
@@ -605,7 +641,7 @@ def main():
         pools = load_configuration()
 
         # Step 2: Initialize clients
-        fetcher, cache = initialize_clients(use_cache=True)
+        fetcher, cache = initialize_clients(use_cache=False)
 
         # Step 3: Select pool to analyze (use first pool)
         pool_config = pools[0]
@@ -627,11 +663,7 @@ def main():
 
         # Step 5: Reconstruct state
         snapshot, reconstructor = reconstruct_state(
-            pool_config,
-            positions_df,
-            collateral_df,
-            pool_state_df,
-            prices
+            pool_config, positions_df, collateral_df, pool_state_df, prices
         )
 
         # Step 6: Analyze snapshot
@@ -678,6 +710,7 @@ def main():
     except Exception as e:
         print_error(f"\nDemo failed with error: {e}")
         import traceback
+
         print("\n" + traceback.format_exc())
         sys.exit(1)
 
