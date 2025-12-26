@@ -295,8 +295,9 @@ class MorphoDataFetcher:
             logger.warning("No price data returned")
             return {}
 
-        # Take the most recent price for each token
-        df = df.sort_values("timestamp", ascending=False)
+        # Note: Query already returns most recent price per token via ROW_NUMBER()
+        # But we'll sort/deduplicate anyway for safety
+        df = df.sort_values("minute", ascending=False)
         df = df.drop_duplicates(subset=["contract_address"], keep="first")
 
         # Return as dict: address -> price

@@ -79,10 +79,9 @@ class TestMorphoDataFetcher:
         mock_result.result.rows = [
             {
                 'market_id': '0xabc',
-                'block_time': '2024-01-01',
-                'total_supply_assets': 1000000,
-                'total_borrow_assets': 500000,
-                'utilization': 0.5
+                'call_block_time': '2024-01-01',
+                'output_totalSupplyAssets': 1000000,
+                'output_totalBorrowAssets': 500000
             }
         ]
         fetcher.client.run_query.return_value = mock_result
@@ -111,9 +110,9 @@ class TestMorphoDataFetcher:
             {
                 'market_id': '0xabc',
                 'borrower': '0x123',
-                'borrow_shares': 100,
-                'borrow_assets': 1000,
-                'block_time': '2024-01-01'
+                'active_borrow_shares': 100,
+                'active_borrow_assets': 1000,
+                'last_borrow_time': '2024-01-01'
             }
         ]
         fetcher.client.run_query.return_value = mock_result
@@ -172,14 +171,14 @@ class TestMorphoDataFetcher:
                 'symbol': 'wstETH',
                 'decimals': 18,
                 'price': 2500.50,
-                'timestamp': '2024-01-01 12:00:00'
+                'minute': '2024-01-01 12:00:00'
             },
             {
                 'contract_address': '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
                 'symbol': 'USDC',
                 'decimals': 6,
                 'price': 1.0,
-                'timestamp': '2024-01-01 12:00:00'
+                'minute': '2024-01-01 12:00:00'
             }
         ]
         fetcher.client.run_query.return_value = mock_result

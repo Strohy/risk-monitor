@@ -40,14 +40,14 @@ def positions_df():
         {
             'market_id': '0xabc123',
             'borrower': '0x111',
-            'borrow_assets': 10000.0,
-            'block_time': '2024-01-01 12:00:00'
+            'active_borrow_assets': 10000.0,
+            'last_borrow_time': '2024-01-01 12:00:00'
         },
         {
             'market_id': '0xabc123',
             'borrower': '0x222',
-            'borrow_assets': 5000.0,
-            'block_time': '2024-01-01 12:00:00'
+            'active_borrow_assets': 5000.0,
+            'last_borrow_time': '2024-01-01 12:00:00'
         }
     ])
 
@@ -77,9 +77,9 @@ def pool_state_df():
     return pd.DataFrame([
         {
             'market_id': '0xabc123',
-            'block_time': '2024-01-01 12:00:00',
-            'total_supply_assets': 100000.0,
-            'total_borrow_assets': 50000.0
+            'call_block_time': '2024-01-01 12:00:00',
+            'output_totalSupplyAssets': 100000.0,
+            'output_totalBorrowAssets': 50000.0
         }
     ])
 
@@ -169,8 +169,8 @@ class TestStateReconstructor:
             {
                 'market_id': '0xabc123',
                 'borrower': '0x111',
-                'borrow_assets': 0.0,
-                'block_time': '2024-01-01'
+                'active_borrow_assets': 0.0,
+                'last_borrow_time': '2024-01-01'
             }
         ])
 
@@ -292,8 +292,8 @@ class TestStateReconstructor:
             {
                 'market_id': '0xabc123',
                 'borrower': '0x111',
-                'borrow_assets': 10000.0,
-                'block_time': '2024-01-01'
+                'active_borrow_assets': 10000.0,
+                'last_borrow_time': '2024-01-01'
             }
         ])
 
@@ -321,7 +321,7 @@ class TestStateReconstructor:
             {
                 'market_id': '0xabc123',
                 'borrower': '0x111',
-                # Missing borrow_assets
+                # Missing active_borrow_assets
             }
         ])
 

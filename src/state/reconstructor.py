@@ -92,7 +92,7 @@ class StateReconstructor:
             try:
                 # Extract amounts
                 collateral_amount = float(row['collateral_assets'])
-                debt_amount = float(row.get('borrow_assets', row.get('borrow_shares', 0)))
+                debt_amount = float(row.get('active_borrow_assets', row.get('active_borrow_shares', 0)))
 
                 # Convert to USD
                 collateral_value = collateral_amount * collateral_price
@@ -105,7 +105,7 @@ class StateReconstructor:
                     health_factor = float('inf')
 
                 # Get timestamp
-                timestamp = row.get('block_time', row.get('block_time_borrow'))
+                timestamp = row.get('last_borrow_time', row.get('block_time'))
                 if timestamp and not isinstance(timestamp, datetime):
                     timestamp = pd.to_datetime(timestamp)
 
@@ -170,12 +170,12 @@ class StateReconstructor:
 
         # Get latest pool state
         if not pool_state_df.empty:
-            # Sort by block_time descending and take first
-            pool_state_df = pool_state_df.sort_values('block_time', ascending=False)
+            # Sort by call_block_time descending and take first
+            pool_state_df = pool_state_df.sort_values('call_block_time', ascending=False)
             latest_state = pool_state_df.iloc[0]
 
-            total_supply = float(latest_state.get('total_supply_assets', 0))
-            total_borrow = float(latest_state.get('total_borrow_assets', 0))
+            total_supply = float(latest_state.get('output_totalSupplyAssets', 0))
+            total_borrow = float(latest_state.get('output_totalBorrowAssets', 0))
 
             if total_supply > 0:
                 utilization = total_borrow / total_supply
