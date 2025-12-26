@@ -627,6 +627,14 @@ def save_snapshot_to_file(snapshot, reconstructor):
         print_error(f"Failed to save snapshot: {e}")
 
 
+def readable_number(num):
+    for unit in ["", "K", "M", "B", "T"]:
+        if abs(num) < 1000:
+            return f"{num:.2f}{unit}"
+        num /= 1000
+    return f"{num:.2f}"
+
+
 def main():
     """Main demo function"""
     print(f"\n{Colors.HEADER}{Colors.BOLD}")
@@ -643,44 +651,143 @@ def main():
         # Step 2: Initialize clients
         fetcher, cache = initialize_clients(use_cache=False)
 
-        # Step 3: Select pool to analyze (use first pool)
-        pool_config = pools[0]
-        print_info(f"\nAnalyzing pool: {pool_config['name']}")
+        # Step 3: Analyze all pools or specific pool based on user selection
+        # Allow user to select which pools to analyze via environment variable or analyze all
+        pool_indices_str = os.getenv("ANALYZE_POOLS", "all")
 
-        # Step 4: Fetch data
-        positions_df, collateral_df, pool_state_df, prices = fetch_pool_data(
-            fetcher, cache, pool_config
-        )
+        if pool_indices_str.lower() == "all":
+            pools_to_analyze = pools
+        else:
+            # Parse comma-separated indices (e.g., "0,2,3")
+            indices = [int(i.strip()) for i in pool_indices_str.split(",")]
+            pools_to_analyze = [pools[i] for i in indices if i < len(pools)]
 
-        # Check if we have data
-        if positions_df.empty:
-            print_warning("No positions found for this pool")
-            print_info("This could mean:")
-            print_info("  1. The market ID is incorrect")
-            print_info("  2. The pool has no active positions")
-            print_info("  3. The Dune query needs adjustment")
-            return
+        print_info(f"\nAnalyzing {len(pools_to_analyze)} pool(s)")
+        print()
 
-        # Step 5: Reconstruct state
-        snapshot, reconstructor = reconstruct_state(
-            pool_config, positions_df, collateral_df, pool_state_df, prices
-        )
+        # Store results for summary
+        results = []
 
-        # Step 6: Analyze snapshot
-        analyze_snapshot(snapshot)
+        # Step 4: Loop through each pool
+        for idx, pool_config in enumerate(pools_to_analyze):
+            print(f"\n{Colors.BOLD}{'=' * 60}")
+            print(f"Pool {idx + 1} of {len(pools_to_analyze)}: {pool_config['name']}")
+            print(f"{'=' * 60}{Colors.ENDC}\n")
 
-        # Step 6b: Calculate risk metrics
-        risk_metrics = calculate_risk_metrics(snapshot)
+            try:
+                # Fetch data
+                positions_df, collateral_df, pool_state_df, prices = fetch_pool_data(
+                    fetcher, cache, pool_config
+                )
 
-        # Step 6c: Run stress tests
-        stress_engine = run_stress_tests(snapshot)
+                # Check if we have data
+                if positions_df.empty:
+                    print_warning("No positions found for this pool")
+                    print_info("This could mean:")
+                    print_info("  1. The market ID is incorrect")
+                    print_info("  2. The pool has no active positions")
+                    print_info("  3. The Dune query needs adjustment")
+                    results.append({
+                        'pool_name': pool_config['name'],
+                        'status': 'NO_DATA',
+                        'snapshot': None,
+                        'risk_score': None,
+                        'risk_level': None
+                    })
+                    continue
 
-        # Step 6d: Calculate risk score
-        if risk_metrics and stress_engine:
-            calculate_risk_score(snapshot, risk_metrics, stress_engine)
+                # Reconstruct state
+                snapshot, reconstructor = reconstruct_state(
+                    pool_config, positions_df, collateral_df, pool_state_df, prices
+                )
 
-        # Step 7: Save snapshot
-        save_snapshot_to_file(snapshot, reconstructor)
+                # Analyze snapshot
+                analyze_snapshot(snapshot)
+
+                # Calculate risk metrics
+                risk_metrics = calculate_risk_metrics(snapshot)
+
+                # Run stress tests
+                stress_engine = run_stress_tests(snapshot)
+
+                # Calculate risk score
+                risk_score = None
+                risk_level = None
+                if risk_metrics and stress_engine:
+                    scorer = RiskScorer(risk_metrics, stress_engine)
+                    risk_score = scorer.calculate_composite_score()
+                    risk_level = scorer.get_risk_level(risk_score)
+                    calculate_risk_score(snapshot, risk_metrics, stress_engine)
+
+                # Save snapshot
+                save_snapshot_to_file(snapshot, reconstructor)
+
+                # Store results
+                results.append({
+                    'pool_name': pool_config['name'],
+                    'status': 'SUCCESS',
+                    'snapshot': snapshot,
+                    'risk_score': risk_score,
+                    'risk_level': risk_level
+                })
+
+            except Exception as e:
+                print_error(f"Failed to analyze pool {pool_config['name']}: {e}")
+                results.append({
+                    'pool_name': pool_config['name'],
+                    'status': 'ERROR',
+                    'snapshot': None,
+                    'risk_score': None,
+                    'risk_level': None,
+                    'error': str(e)
+                })
+                continue
+
+        # Summary of all pools
+        if len(pools_to_analyze) > 1:
+            print_header("Multi-Pool Summary")
+
+            print(f"{Colors.BOLD}Analysis Results:{Colors.ENDC}")
+            for result in results:
+                status_icon = "✓" if result['status'] == 'SUCCESS' else "✗"
+
+                if result['status'] == 'SUCCESS':
+                    risk_score = result['risk_score']
+                    risk_level = result['risk_level']
+                    snapshot = result['snapshot']
+
+                    # Color code by risk level
+                    if risk_level == "CRITICAL":
+                        color = Colors.FAIL
+                    elif risk_level == "HIGH":
+                        color = Colors.WARNING
+                    elif risk_level == "MODERATE":
+                        color = Colors.OKCYAN
+                    else:
+                        color = Colors.OKGREEN
+
+                    print(f"{color}{status_icon} {result['pool_name']:<30} | "
+                          f"Score: {risk_score:>5.1f} ({risk_level:<8}) | "
+                          f"TVL: ${snapshot.total_supply:>12,.0f} | "
+                          f"Util: {snapshot.utilization*100:>5.1f}%{Colors.ENDC}")
+                elif result['status'] == 'NO_DATA':
+                    print(f"{Colors.WARNING}{status_icon} {result['pool_name']:<30} | No positions found{Colors.ENDC}")
+                else:
+                    print(f"{Colors.FAIL}{status_icon} {result['pool_name']:<30} | Error: {result.get('error', 'Unknown')}{Colors.ENDC}")
+
+            print()
+
+            # Aggregate statistics
+            successful_results = [r for r in results if r['status'] == 'SUCCESS']
+            if successful_results:
+                total_tvl = sum(r['snapshot'].total_supply for r in successful_results)
+                avg_risk_score = sum(r['risk_score'] for r in successful_results) / len(successful_results)
+
+                print(f"{Colors.BOLD}Aggregate Statistics:{Colors.ENDC}")
+                print_info(f"Total TVL: ${total_tvl:,.2f}")
+                print_info(f"Average Risk Score: {avg_risk_score:.1f}")
+                print_info(f"Successful Analyses: {len(successful_results)}/{len(results)}")
+                print()
 
         # Success summary
         print_header("Demo Complete")
@@ -702,6 +809,11 @@ def main():
         print_info("  → Phase 7: Report Generation (HTML + charts)")
         print_info("  → Phase 8: CLI & Automation")
         print_info("  → Phase 9: Written Analysis")
+        print()
+
+        print(f"{Colors.OKCYAN}Tip: To analyze specific pools, set ANALYZE_POOLS environment variable{Colors.ENDC}")
+        print_info('  Example: ANALYZE_POOLS="0,2" python demo.py  (analyzes pools at index 0 and 2)')
+        print_info('  Example: ANALYZE_POOLS="all" python demo.py  (analyzes all pools - default)')
         print()
 
     except KeyboardInterrupt:
