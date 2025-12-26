@@ -20,7 +20,8 @@ def pool_config():
         'collateral_address': '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
         'loan': 'USDC',
         'loan_address': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        'lltv': 0.86
+        'lltv': 0.86,
+        'decimals': 6  # USDC has 6 decimals
     }
 
 
@@ -35,18 +36,18 @@ def prices():
 
 @pytest.fixture
 def positions_df():
-    """Sample positions DataFrame"""
+    """Sample positions DataFrame (values in raw USDC units with 6 decimals)"""
     return pd.DataFrame([
         {
             'market_id': '0xabc123',
             'borrower': '0x111',
-            'active_borrow_assets': 10000.0,
+            'active_borrow_assets': 10000_000000,  # 10,000 USDC in raw units (10000 * 10^6)
             'last_borrow_time': '2024-01-01 12:00:00'
         },
         {
             'market_id': '0xabc123',
             'borrower': '0x222',
-            'active_borrow_assets': 5000.0,
+            'active_borrow_assets': 5000_000000,  # 5,000 USDC in raw units (5000 * 10^6)
             'last_borrow_time': '2024-01-01 12:00:00'
         }
     ])
@@ -54,18 +55,18 @@ def positions_df():
 
 @pytest.fixture
 def collateral_df():
-    """Sample collateral DataFrame"""
+    """Sample collateral DataFrame (collateral value in raw USDC units with 6 decimals)"""
     return pd.DataFrame([
         {
             'market_id': '0xabc123',
             'borrower': '0x111',
-            'collateral': 10.0,  # 10 wstETH
+            'collateral': 25000_000000,  # 25,000 USDC worth of collateral in raw units
             'block_time': '2024-01-01 12:00:00'
         },
         {
             'market_id': '0xabc123',
             'borrower': '0x222',
-            'collateral': 5.0,   # 5 wstETH
+            'collateral': 12500_000000,  # 12,500 USDC worth of collateral in raw units
             'block_time': '2024-01-01 12:00:00'
         }
     ])
@@ -73,13 +74,13 @@ def collateral_df():
 
 @pytest.fixture
 def pool_state_df():
-    """Sample pool state DataFrame"""
+    """Sample pool state DataFrame (values in raw USDC units with 6 decimals)"""
     return pd.DataFrame([
         {
             'market_id': '0xabc123',
             'call_block_time': '2024-01-01 12:00:00',
-            'output_totalSupplyAssets': 100000.0,
-            'output_totalBorrowAssets': 50000.0
+            'output_totalSupplyAssets': 100000_000000,  # 100,000 USDC in raw units
+            'output_totalBorrowAssets': 50000_000000    # 50,000 USDC in raw units
         }
     ])
 

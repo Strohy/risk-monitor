@@ -80,8 +80,8 @@ class TestMorphoDataFetcher:
             {
                 'market_id': '0xabc',
                 'call_block_time': '2024-01-01',
-                'output_totalSupplyAssets': 1000000,
-                'output_totalBorrowAssets': 500000
+                'output_totalSupplyAssets': 1000000_000000,  # 1M USDC in raw units
+                'output_totalBorrowAssets': 500000_000000    # 500K USDC in raw units
             }
         ]
         fetcher.client.run_query.return_value = mock_result
@@ -92,7 +92,8 @@ class TestMorphoDataFetcher:
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 1
         assert result.iloc[0]['market_id'] == '0xabc'
-        assert result.iloc[0]['utilization'] == 0.5
+        assert result.iloc[0]['output_totalSupplyAssets'] == 1000000_000000
+        assert result.iloc[0]['output_totalBorrowAssets'] == 500000_000000
 
     def test_fetch_pool_state_error(self, fetcher, mock_dune_client):
         """Test pool state fetch with error"""
