@@ -3,6 +3,7 @@ pools:
     market_id: "0x3a85e619751152991742810df6ec69ce473daef99e28a64ab2340d7b7ccfee49"
     collateral: "WBTC"
     collateral_address: "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"
+    collateral_decimals: 8 
     loan: "USDC"
     loan_address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     lltv: 0.86
@@ -13,15 +14,17 @@ pools:
     market_id: "0xb8fc70e82bc5bb53e773626fcc6a23f7eefa036918d7ef216ecfb1950a94a85e"
     collateral: "wstETH"
     collateral_address: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0"
+    collateral_decimals: 18
     loan: "WETH"
     loan_address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
     lltv: 0.965
-    decimals: 18 
+    decimals: 18
 
-  - name: "AA_FalconXUSDC/USDC"
-    market_id: "0xe83d72fa5b00dcd46d9e0e860d95aa540d5ec106da5833108a9f826f21f36f52"
-    collateral: "AA_FalconXUSDC"
-    collateral_address: "0xC26A6Fa2C37b38E549a4a1807543801Db684f99C"
+  - name: "tBTC/USDC"
+    market_id: "0xe4cfbee9af4ad713b41bf79f009ca02b17c001a0c0e7bd2e6a89b1111b3d3f08"
+    collateral: "tBTC"
+    collateral_address: "0x18084fbA666a33d37592fA2633fD49a74DD93a88"
+    collateral_decimals: 18
     loan: "USDC"
     loan_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
     lltv: 0.77
