@@ -18,6 +18,7 @@ def pool_config():
         'market_id': '0xabc123',
         'collateral': 'wstETH',
         'collateral_address': '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
+        'collateral_decimals': 18,  # wstETH has 18 decimals
         'loan': 'USDC',
         'loan_address': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         'lltv': 0.86,
@@ -55,18 +56,18 @@ def positions_df():
 
 @pytest.fixture
 def collateral_df():
-    """Sample collateral DataFrame (collateral value in raw USDC units with 6 decimals)"""
+    """Sample collateral DataFrame (collateral in raw wstETH units with 18 decimals)"""
     return pd.DataFrame([
         {
             'market_id': '0xabc123',
             'borrower': '0x111',
-            'collateral': 25000_000000,  # 25,000 USDC worth of collateral in raw units
+            'collateral': 10_000000000000000000,  # 10 wstETH in raw units (10 * 10^18)
             'block_time': '2024-01-01 12:00:00'
         },
         {
             'market_id': '0xabc123',
             'borrower': '0x222',
-            'collateral': 12500_000000,  # 12,500 USDC worth of collateral in raw units
+            'collateral': 5_000000000000000000,  # 5 wstETH in raw units (5 * 10^18)
             'block_time': '2024-01-01 12:00:00'
         }
     ])

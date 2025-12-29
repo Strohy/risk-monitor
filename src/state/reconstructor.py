@@ -28,11 +28,13 @@ class StateReconstructor:
         # Normalize addresses to lowercase for comparison
         self.prices = {k.lower(): v for k, v in prices.items()}
 
-        # Get decimals for token normalization (Morpho stores all values in loan token units)
+        # Get decimals for token normalization
         self.loan_decimals = pool_config.get('decimals', 18)
+        self.collateral_decimals = pool_config.get('collateral_decimals', 18)
 
         logger.info(f"Initialized reconstructor for {pool_config['name']}")
         logger.info(f"  Loan token decimals: {self.loan_decimals}")
+        logger.info(f"  Collateral token decimals: {self.collateral_decimals}")
 
     def _get_token_price(self, address: str) -> float:
         """Get token price with fallback"""
@@ -86,27 +88,29 @@ class StateReconstructor:
         # Fill missing collateral with 0
         merged['collateral_assets'] = merged['collateral_assets'].fillna(0)
 
-        # Get loan token price (Morpho stores all values in loan token terms)
+        # Get token prices
+        collateral_price = self._get_token_price(self.pool_config['collateral_address'])
         loan_price = self._get_token_price(self.pool_config['loan_address'])
         lltv = self.pool_config['lltv']
 
-        logger.info(f"Using {self.pool_config['loan']} price: ${loan_price:.2f}")
+        logger.info(f"Using prices: {self.pool_config['collateral']}=${collateral_price:.2f}, "
+                   f"{self.pool_config['loan']}=${loan_price:.2f}")
 
         positions = []
+        print(f"Merdged head : {merged[['collateral_assets', 'active_borrow_assets']].head()}")
 
         for _, row in merged.iterrows():
             try:
-                # Extract raw amounts (Morpho stores all values in loan token units)
+                # Extract raw amounts (in token's native units with decimals)
                 collateral_amount_raw = float(row['collateral_assets'])
-                debt_amount_raw = float(row.get('active_borrow_assets', row.get('active_borrow_shares', 0)))
+                debt_amount_raw = float(row.get('active_borrow_assets', row.get('active_borrow_assets', 0)))
 
-                # Normalize to human-readable units by dividing by 10^loan_decimals
-                # Both collateral and debt are denominated in loan token
-                collateral_amount = collateral_amount_raw / (10 ** self.loan_decimals)
+                # Normalize to human-readable units by dividing by 10^decimals
+                collateral_amount = collateral_amount_raw / (10 ** self.collateral_decimals)
                 debt_amount = debt_amount_raw / (10 ** self.loan_decimals)
 
-                # Convert to USD (both already in loan token terms, just multiply by loan price)
-                collateral_value = collateral_amount * loan_price
+                # Convert to USD
+                collateral_value = collateral_amount * collateral_price
                 debt_value = debt_amount * loan_price
 
                 # Calculate health factor: (collateral_value * LLTV) / debt_value
