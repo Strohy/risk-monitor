@@ -6,9 +6,9 @@ A comprehensive risk analysis system for Morpho Blue lending pools, featuring st
 
 - Real-time risk metrics calculation
 - Multi-scenario stress testing
-- Interactive HTML reports with Plotly charts
 - Automated daily analysis via GitHub Actions
 - Composite risk scoring (0-100)
+<!-- - Interactive HTML reports with Plotly charts -->
 
 ## Quick Start
 
@@ -22,7 +22,7 @@ A comprehensive risk analysis system for Morpho Blue lending pools, featuring st
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/risk-monitor.git
+git clone https://github.com/strohy/risk-monitor.git
 cd risk-monitor
 
 # Install Poetry (if not already installed)
@@ -150,26 +150,11 @@ poetry run ruff check src/
 poetry run jupyter lab
 ```
 
-## Implementation Status
-
-- [x] Phase 1: Foundation (Project setup)
-- [ ] Phase 2: Data Layer (Dune integration)
-- [ ] Phase 3: State Reconstruction
-- [ ] Phase 4: Risk Metrics Engine
-- [ ] Phase 5: Stress Testing
-- [ ] Phase 6: Risk Scoring
-- [ ] Phase 7: Report Generation
-- [ ] Phase 8: CLI & Automation
-- [ ] Phase 9: Written Analysis
-- [ ] Phase 10: Polish & Deploy
-
-See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for full roadmap.
 
 ## Resources
 
 - [Morpho Blue Documentation](https://docs.morpho.org/)
 - [Dune Analytics](https://dune.com/)
-- [Implementation Plan](IMPLEMENTATION_PLAN.md)
 
 ## Contributing
 
