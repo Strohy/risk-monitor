@@ -637,7 +637,7 @@ def main():
 
     print(f"\n{Colors.HEADER}{Colors.BOLD}")
     print("╔════════════════════════════════════════════════════════════╗")
-    print("║             DeFi Risk Monitor - Pipeline Demo              ║")
+    print("║                     DeFi Risk Monitor                      ║")
     print("║                Morpho Blue Pool Analysis                   ║")
     print("╚════════════════════════════════════════════════════════════╝")
     print(f"{Colors.ENDC}\n")
