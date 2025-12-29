@@ -44,7 +44,6 @@ Each report includes:
 
 ## Notes
 
-- Reports are in markdown format for easy viewing in GitHub/IDE
 - Each pool has its own directory for organization
 - Timestamped reports are kept for historical tracking
 - Latest reports are overwritten on each run
