@@ -6,8 +6,8 @@ A comprehensive risk analysis system for Morpho Blue lending pools, featuring st
 
 - Real-time risk metrics calculation
 - Multi-scenario stress testing
-- Automated daily analysis via GitHub Actions
 - Composite risk scoring (0-100)
+<!-- - Automated daily analysis via GitHub Actions -->
 <!-- - Interactive HTML reports with Plotly charts -->
 
 ## Quick Start
@@ -15,7 +15,7 @@ A comprehensive risk analysis system for Morpho Blue lending pools, featuring st
 ### Prerequisites
 
 - Python 3.10+
-- Poetry (for dependency management)
+- pip (Python package installer)
 - Dune Analytics API key ([Get one here](https://dune.com/settings/api))
 
 ### Installation
@@ -25,30 +25,41 @@ A comprehensive risk analysis system for Morpho Blue lending pools, featuring st
 git clone https://github.com/strohy/risk-monitor.git
 cd risk-monitor
 
-# Install Poetry (if not already installed)
-curl -sSL https://install.python-poetry.org | python3 -
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-poetry install
+pip install -r requirements.txt
 
 # Set up environment
 cp .env.example .env
 # Edit .env and add your DUNE_API_KEY
 ```
 
+### Configuration
+
+Before running, configure your pools in `config/pools.yaml` and add:
+- Market IDs from Morpho Blue
+- Token addresses and decimals
+<!-- - Dune query IDs in `config/dune_queries.yaml` -->
+
 ### Usage
 
 ```bash
-# Analyze all configured pools
-poetry run python -m src.main --pools all
+# Analyze all pools
+python demo.py
 
-# Analyze specific pool
-poetry run python -m src.main --pools "wstETH/USDC"
+# Analyze specific pools (by index)
+ANALYZE_POOLS="0,2" python demo.py
+
+# Generate markdown reports
+python demo.py --save-report
 ```
 
 ### View Reports
 
-Reports are generated in the `reports/` directory. Open `reports/index.html` in your browser.
+Markdown reports are generated in the `reports/` directory when using `--save-report` flag.
 
 ## Project Structure
 
@@ -65,7 +76,7 @@ risk-monitor/
 ├── data/
 │   ├── raw/           # Raw Dune exports
 │   └── processed/     # Cleaned snapshots
-├── reports/           # Generated HTML reports
+├── reports/           # Generated markdown reports
 ├── config/            # Pool and scenario configs
 └── tests/             # Unit tests
 ```
@@ -90,10 +101,10 @@ We simulate collateral price shocks from -5% to -50% and measure:
 ### Risk Scoring
 
 Composite score (0-100, higher = riskier) weighted across four components:
-- **Utilization (20%):** Pool capital efficiency vs. liquidity risk
-- **Liquidation Clustering (30%):** Concentration of positions near liquidation
+- **Utilization (15%):** Pool capital efficiency vs. liquidity risk
+- **Health Factor (30%):** Concentration of positions near liquidation
 - **Concentration (25%):** Borrower concentration risk
-- **Oracle Sensitivity (25%):** Vulnerability to price movements
+- **Stress Sensitivity (30%):** Vulnerability to price movements
 
 ## Configuration
 
@@ -107,48 +118,32 @@ pools:
     market_id: "0x..."
     collateral: "wstETH"
     collateral_address: "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+    collateral_decimals: 18
     loan: "USDC"
     loan_address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    decimals: 6  # loan token decimals
     lltv: 0.86
-    priority: 1
 ```
 
-### Customizing Stress Scenarios
+## Output
 
-Edit `config/stress_scenarios.yaml` to modify:
-- Price shock scenarios
-- Risk scoring weights
-- Alert thresholds
+### Terminal Output
 
-## Automated Analysis
+The demo script provides color-coded terminal output with:
+- Pool metrics (TVL, utilization, positions)
+- Risk metrics (concentration, health factor distribution)
+- Stress test results (formatted table)
+- Composite risk score and level
+- Top borrowers with risk status
 
-GitHub Actions runs analysis daily at midnight UTC. To enable:
+### Markdown Reports
 
-1. Add `DUNE_API_KEY` to GitHub Secrets
-2. Enable GitHub Pages (source: gh-pages branch)
-3. Push to main branch
-
-Results are automatically committed and deployed.
-
-## Analysis Document
-
-See [ANALYSIS.md](ANALYSIS.md) for detailed risk analysis and parameter recommendations (generated after running analysis).
-
-## Development
-
-```bash
-# Run tests
-poetry run pytest
-
-# Format code
-poetry run black src/
-
-# Lint code
-poetry run ruff check src/
-
-# Start Jupyter for exploration
-poetry run jupyter lab
-```
+When using `--save-report`, generates markdown files with:
+- Executive summary with risk interpretation
+- Detailed metrics tables
+- Stress test analysis
+- Top 10 borrowers
+- Timestamped and latest versions saved
 
 
 ## Resources

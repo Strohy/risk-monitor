@@ -97,7 +97,6 @@ class StateReconstructor:
                    f"{self.pool_config['loan']}=${loan_price:.2f}")
 
         positions = []
-        print(f"Merdged head : {merged[['collateral_assets', 'active_borrow_assets']].head()}")
 
         for _, row in merged.iterrows():
             try:
