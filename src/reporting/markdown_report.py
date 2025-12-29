@@ -52,24 +52,27 @@ class MarkdownReportGenerator:
         # Generate report content
         content = self._generate_content(snapshot, risk_metrics, stress_engine, risk_scorer)
 
+        # Create pool-specific directory
+        pool_name_safe = snapshot.pool_name.replace("/", "-")
+        pool_dir = self.output_dir / pool_name_safe
+        pool_dir.mkdir(parents=True, exist_ok=True)
+
         timestamped_path = None
         latest_path = None
 
         # Save timestamped version
         if save_timestamped:
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-            pool_name_safe = snapshot.pool_name.replace("/", "-")
-            filename = f"{pool_name_safe}_{timestamp}.md"
-            timestamped_path = self.output_dir / filename
+            filename = f"{timestamp}.md"
+            timestamped_path = pool_dir / filename
 
             with open(timestamped_path, 'w', encoding='utf-8') as f:
                 f.write(content)
 
         # Save latest version
         if save_latest:
-            pool_name_safe = snapshot.pool_name.replace("/", "-")
-            filename = f"{pool_name_safe}_latest.md"
-            latest_path = self.output_dir / filename
+            filename = "latest.md"
+            latest_path = pool_dir / filename
 
             with open(latest_path, 'w', encoding='utf-8') as f:
                 f.write(content)

@@ -2,10 +2,26 @@
 
 This directory contains generated markdown reports for Morpho Blue pool risk analysis.
 
+## Directory Structure
+
+Reports are organized by pool:
+
+```
+reports/
+├── WBTC-USDC/
+│   ├── 2024-12-29_14-30.md
+│   ├── 2024-12-29_16-45.md
+│   └── latest.md
+├── wstETH-WETH/
+│   ├── 2024-12-29_14-30.md
+│   └── latest.md
+└── README.md
+```
+
 ## Report Types
 
-- **Timestamped Reports**: `PoolName_YYYY-MM-DD_HH-MM.md` - Historical reports with timestamp
-- **Latest Reports**: `PoolName_latest.md` - Always contains the most recent analysis
+- **Timestamped Reports**: `YYYY-MM-DD_HH-MM.md` - Historical reports with timestamp
+- **Latest Report**: `latest.md` - Always contains the most recent analysis for that pool
 
 ## Generating Reports
 
@@ -15,7 +31,7 @@ Run the demo with the `--save-report` flag:
 python demo.py --save-report
 ```
 
-This will generate one report per analyzed pool.
+This will generate one report per analyzed pool in its own directory.
 
 ## Report Contents
 
@@ -28,5 +44,7 @@ Each report includes:
 
 ## Notes
 
+- Reports are in markdown format for easy viewing in GitHub/IDE
+- Each pool has its own directory for organization
 - Timestamped reports are kept for historical tracking
 - Latest reports are overwritten on each run

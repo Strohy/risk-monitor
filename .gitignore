@@ -45,8 +45,8 @@ data/processed/*
 .ipynb_checkpoints/
 *.ipynb
 
-# Reports (keep only README)
-reports/*.md
+# Reports (keep only README, ignore pool directories)
+reports/*/
 !reports/README.md
 
 # Testing

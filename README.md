@@ -7,8 +7,6 @@ A comprehensive risk analysis system for Morpho Blue lending pools, featuring st
 - Real-time risk metrics calculation
 - Multi-scenario stress testing
 - Composite risk scoring (0-100)
-<!-- - Automated daily analysis via GitHub Actions -->
-<!-- - Interactive HTML reports with Plotly charts -->
 
 ## Quick Start
 
