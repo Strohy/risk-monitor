@@ -44,9 +44,6 @@ poetry run python -m src.main --pools all
 
 # Analyze specific pool
 poetry run python -m src.main --pools "wstETH/USDC"
-
-# Force fresh data (bypass cache)
-poetry run python -m src.main --pools all --force-refresh
 ```
 
 ### View Reports

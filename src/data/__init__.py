@@ -1,1 +1,1 @@
-"""Data fetching and caching modules"""
+"""Data fetching modules"""

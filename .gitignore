@@ -45,9 +45,9 @@ data/processed/*
 .ipynb_checkpoints/
 *.ipynb
 
-# Reports (keep only latest)
-reports/*.html
-!reports/index.html
+# Reports (keep only README)
+reports/*.md
+!reports/README.md
 
 # Testing
 .pytest_cache/

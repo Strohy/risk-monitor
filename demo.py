@@ -24,11 +24,11 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.data.dune_client import MorphoDataFetcher
-from src.data.cache import DataCache
 from src.state.reconstructor import StateReconstructor
 from src.metrics import RiskMetrics
 from src.stress import StressTestEngine
 from src.scoring import RiskScorer
+from src.reporting import MarkdownReportGenerator
 
 
 # ANSI color codes for pretty output
@@ -43,6 +43,37 @@ class Colors:
     BOLD = "\033[1m"
 
 
+def readable_number(num):
+    """Convert number to K/M/B notation"""
+    if abs(num) < 1000:
+        return f"{num:.2f}"
+
+    for unit in ["K", "M", "B", "T"]:
+        num /= 1000
+        if abs(num) < 1000:
+            return f"{num:.2f}{unit}"
+    return f"{num:.2f}P"
+
+
+def _format_dollars(text):
+    """Auto-format dollar amounts in text with K/M/B notation"""
+    import re
+
+    def replace_amount(match):
+        # Extract number from matched pattern, remove commas
+        amount_str = match.group(1).replace(',', '')
+        try:
+            amount = float(amount_str)
+            return f"${readable_number(amount)}"
+        except ValueError:
+            return match.group(0)  # Return original if can't parse
+
+    # Match patterns like: $1,234.56 or $1,234 or $1234567.89
+    # Captures the number part after the $
+    pattern = r'\$([0-9,]+\.?[0-9]*)'
+    return re.sub(pattern, replace_amount, text)
+
+
 def print_header(text):
     """Print a colored header"""
     print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * 60}{Colors.ENDC}")
@@ -52,22 +83,26 @@ def print_header(text):
 
 def print_success(text):
     """Print success message"""
-    print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
+    text = _format_dollars(text)
+    print(f"{Colors.OKGREEN}[OK] {text}{Colors.ENDC}")
 
 
 def print_info(text):
     """Print info message"""
+    text = _format_dollars(text)
     print(f"{Colors.OKCYAN}  {text}{Colors.ENDC}")
 
 
 def print_warning(text):
     """Print warning message"""
-    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
+    text = _format_dollars(text)
+    print(f"{Colors.WARNING}[WARNING] {text}{Colors.ENDC}")
 
 
 def print_error(text):
     """Print error message"""
-    print(f"{Colors.FAIL} {text}{Colors.ENDC}")
+    text = _format_dollars(text)
+    print(f"{Colors.FAIL}[ERROR] {text}{Colors.ENDC}")
 
 
 def load_configuration():
@@ -92,8 +127,8 @@ def load_configuration():
     return pools
 
 
-def initialize_clients(use_cache=True):
-    """Initialize Dune client and cache"""
+def initialize_clients():
+    """Initialize Dune client"""
     print_header("Initializing Clients")
 
     # Load environment
@@ -112,47 +147,16 @@ def initialize_clients(use_cache=True):
     fetcher = MorphoDataFetcher(api_key)
     print_success("Initialized Dune Analytics client")
 
-    # Initialize cache
-    if use_cache:
-        cache = DataCache(ttl_minutes=60)
-        print_success(f"Initialized data cache (TTL: 60 minutes)")
-
-        # Show cache info
-        cache_info = cache.get_cache_info()
-        if cache_info["num_files"] > 0:
-            print_info(f"  Found {cache_info['num_files']} cached files")
-    else:
-        cache = None
-        print_warning("Cache disabled")
-
-    return fetcher, cache
+    return fetcher
 
 
-def fetch_pool_data(fetcher, cache, pool_config):
+def fetch_pool_data(fetcher, pool_config):
     """Fetch data for a specific pool"""
     pool_name = pool_config["name"]
     print_header(f"Fetching Data: {pool_name}")
 
     market_ids = [pool_config["market_id"]]
     token_addresses = [pool_config["collateral_address"], pool_config["loan_address"]]
-
-    # Try cache first
-    if cache:
-        print_info("Checking cache...")
-
-        positions_df = cache.get(f"positions_{pool_config['market_id']}")
-        collateral_df = cache.get(f"collateral_{pool_config['market_id']}")
-        pool_state_df = cache.get(f"pool_state_{pool_config['market_id']}")
-        prices = cache.get(f"prices_{pool_config['market_id']}")
-
-        if positions_df is not None and collateral_df is not None:
-            print_success("Retrieved data from cache")
-
-            # Convert prices back to dict if cached as DataFrame
-            if prices is not None and not isinstance(prices, dict):
-                prices = prices.to_dict("records")[0] if len(prices) > 0 else {}
-
-            return positions_df, collateral_df, pool_state_df, prices
 
     # Fetch from Dune
     print_info("Fetching from Dune Analytics...")
@@ -172,7 +176,6 @@ def fetch_pool_data(fetcher, cache, pool_config):
         print_info("  Fetching pool state...")
         pool_state_df = fetcher.fetch_pool_state(market_ids)
         print_success(f"  Retrieved {len(pool_state_df)} pool state records")
-        print(f"  Pool state: {pool_state_df.head()}")
 
         # Fetch prices
         print_info("  Fetching token prices...")
@@ -186,19 +189,6 @@ def fetch_pool_data(fetcher, cache, pool_config):
                 else pool_config["loan"]
             )
             print_info(f"    {token}: ${price:,.2f}")
-
-        # Cache the results
-        if cache:
-            print_info("Caching results...")
-            cache.set(f"positions_{pool_config['market_id']}", positions_df)
-            cache.set(f"collateral_{pool_config['market_id']}", collateral_df)
-            cache.set(f"pool_state_{pool_config['market_id']}", pool_state_df)
-
-            # Cache prices as DataFrame for consistency
-            import pandas as pd
-
-            cache.set(f"prices_{pool_config['market_id']}", pd.DataFrame([prices]))
-            print_success("Data cached successfully")
 
         return positions_df, collateral_df, pool_state_df, prices
 
@@ -305,7 +295,7 @@ def analyze_snapshot(snapshot):
     # Risk analysis
     risky_positions = snapshot.get_positions_by_health_factor(max_hf=1.1)
     if risky_positions:
-        print(f"{Colors.WARNING}{Colors.BOLD}⚠ RISK ALERT:{Colors.ENDC}")
+        print(f"{Colors.WARNING}{Colors.BOLD}[RISK ALERT]:{Colors.ENDC}")
         print_warning(f"{len(risky_positions)} positions are within 10% of liquidation")
 
         total_risky_debt = sum(p.debt_value_usd for p in risky_positions)
@@ -414,6 +404,10 @@ def run_stress_tests(snapshot):
         print(f"{Colors.BOLD}Running Scenarios:{Colors.ENDC}")
         results_df = stress_engine.run_all_scenarios()
 
+        # Display results table header
+        print(f"  {'Shock':<8} {'Positions':<11} {'Debt at Risk':<15} {'Pool %':<8} {'Bad Debt':<12}")
+        print(f"  {'-'*8} {'-'*11} {'-'*15} {'-'*8} {'-'*12}")
+
         # Display results table
         for _, row in results_df.iterrows():
             shock = row["price_shock_pct"]
@@ -430,11 +424,16 @@ def run_stress_tests(snapshot):
             else:
                 color = Colors.OKCYAN
 
-            print(
-                f"{color}  {shock:+5.0f}% shock: {int(positions):3d} positions liquidatable, "
-                f"${debt_risk:>12,.0f} at risk ({pct_affected:5.1f}%), "
-                f"${bad_debt:>10,.0f} bad debt{Colors.ENDC}"
+            # Format dollar amounts
+            debt_risk_str = readable_number(debt_risk)
+            bad_debt_str = readable_number(bad_debt)
+
+            line = (
+                f"  {shock:+6.0f}%  {int(positions):<11} "
+                f"${debt_risk_str:<14} {pct_affected:>6.1f}%  "
+                f"${bad_debt_str:<12}"
             )
+            print(f"{color}{line}{Colors.ENDC}")
 
         print()
 
@@ -456,28 +455,28 @@ def run_stress_tests(snapshot):
 
         print()
 
-        # Cascading risk analysis
-        print(f"{Colors.BOLD}Cascading Risk Analysis:{Colors.ENDC}")
-        cascading = stress_engine.analyze_cascading_risk()
+        # # Cascading risk analysis
+        # print(f"{Colors.BOLD}Cascading Risk Analysis:{Colors.ENDC}")
+        # cascading = stress_engine.analyze_cascading_risk()
 
-        if cascading["has_severe_cliffs"]:
-            print_warning(f"Severe cascading risk detected!")
-            worst_cliff = cascading["worst_cliff"]
-            if worst_cliff:
-                print_warning(
-                    f"Worst cliff: {worst_cliff['risk_jump_pct']:.0f}% increase "
-                    f"between {worst_cliff['from_shock_pct']:.0f}% and {worst_cliff['to_shock_pct']:.0f}%"
-                )
-        else:
-            print_success("No severe cascading risk detected")
+        # if cascading["has_severe_cliffs"]:
+        #     print_warning(f"Severe cascading risk detected!")
+        #     worst_cliff = cascading["worst_cliff"]
+        #     if worst_cliff:
+        #         print_warning(
+        #             f"Worst cliff: {worst_cliff['risk_jump_pct']:.0f}% increase "
+        #             f"between {worst_cliff['from_shock_pct']:.0f}% and {worst_cliff['to_shock_pct']:.0f}%"
+        #         )
+        # else:
+        #     print_success("No severe cascading risk detected")
 
-        print_info(
-            f"Average risk increase per scenario: {cascading['avg_risk_increase_per_scenario']:.2f}%"
-        )
-        print_info(
-            f"Maximum risk increase per scenario: {cascading['max_risk_increase_per_scenario']:.2f}%"
-        )
-        print()
+        # print_info(
+        #     f"Average risk increase per scenario: {cascading['avg_risk_increase_per_scenario']:.2f}%"
+        # )
+        # print_info(
+        #     f"Maximum risk increase per scenario: {cascading['max_risk_increase_per_scenario']:.2f}%"
+        # )
+        # print()
 
         # Find liquidation thresholds
         print(f"{Colors.BOLD}Liquidation Thresholds:{Colors.ENDC}")
@@ -502,10 +501,10 @@ def run_stress_tests(snapshot):
                 f"High risk: 10% of pool liquidatable with only {abs(threshold_10):.0f}% price drop"
             )
 
-        if cascading["cliff_points_count"] > 2:
-            print_warning(
-                f"Multiple cliff points detected - positions clustered at similar health factors"
-            )
+        # if cascading["cliff_points_count"] > 2:
+        #     print_warning(
+        #         f"Multiple cliff points detected - positions clustered at similar health factors"
+        #     )
 
     except Exception as e:
         print_error(f"Failed to run stress tests: {e}")
@@ -627,16 +626,15 @@ def save_snapshot_to_file(snapshot, reconstructor):
         print_error(f"Failed to save snapshot: {e}")
 
 
-def readable_number(num):
-    for unit in ["", "K", "M", "B", "T"]:
-        if abs(num) < 1000:
-            return f"{num:.2f}{unit}"
-        num /= 1000
-    return f"{num:.2f}"
-
-
 def main():
     """Main demo function"""
+    # Parse command line arguments
+    import argparse
+    parser = argparse.ArgumentParser(description='Morpho Blue Risk Monitor')
+    parser.add_argument('--save-report', action='store_true',
+                       help='Save markdown reports for analyzed pools')
+    args = parser.parse_args()
+
     print(f"\n{Colors.HEADER}{Colors.BOLD}")
     print("╔════════════════════════════════════════════════════════════╗")
     print("║             DeFi Risk Monitor - Pipeline Demo              ║")
@@ -644,12 +642,19 @@ def main():
     print("╚════════════════════════════════════════════════════════════╝")
     print(f"{Colors.ENDC}\n")
 
+    # Initialize report generator if needed
+    report_gen = None
+    if args.save_report:
+        report_gen = MarkdownReportGenerator()
+        print_info(f"Reports will be saved to: {report_gen.output_dir}")
+        print()
+
     try:
         # Step 1: Load configuration
         pools = load_configuration()
 
         # Step 2: Initialize clients
-        fetcher, cache = initialize_clients(use_cache=False)
+        fetcher = initialize_clients()
 
         # Step 3: Analyze all pools or specific pool based on user selection
         # Allow user to select which pools to analyze via environment variable or analyze all
@@ -677,7 +682,7 @@ def main():
             try:
                 # Fetch data
                 positions_df, collateral_df, pool_state_df, prices = fetch_pool_data(
-                    fetcher, cache, pool_config
+                    fetcher, pool_config
                 )
 
                 # Check if we have data
@@ -722,6 +727,17 @@ def main():
                 # Save snapshot
                 save_snapshot_to_file(snapshot, reconstructor)
 
+                # Generate markdown report if requested
+                if report_gen and risk_metrics and stress_engine and scorer:
+                    print_header("Generating Report")
+                    timestamped_path, latest_path = report_gen.generate_report(
+                        snapshot, risk_metrics, stress_engine, scorer
+                    )
+                    if timestamped_path:
+                        print_success(f"Saved timestamped report: {timestamped_path.name}")
+                    if latest_path:
+                        print_success(f"Saved latest report: {latest_path.name}")
+
                 # Store results
                 results.append({
                     'pool_name': pool_config['name'],
@@ -749,7 +765,7 @@ def main():
 
             print(f"{Colors.BOLD}Analysis Results:{Colors.ENDC}")
             for result in results:
-                status_icon = "✓" if result['status'] == 'SUCCESS' else "✗"
+                status_icon = "[OK]" if result['status'] == 'SUCCESS' else "[FAIL]"
 
                 if result['status'] == 'SUCCESS':
                     risk_score = result['risk_score']
@@ -766,9 +782,10 @@ def main():
                     else:
                         color = Colors.OKGREEN
 
+                    tvl_str = readable_number(snapshot.total_supply)
                     print(f"{color}{status_icon} {result['pool_name']:<30} | "
                           f"Score: {risk_score:>5.1f} ({risk_level:<8}) | "
-                          f"TVL: ${snapshot.total_supply:>12,.0f} | "
+                          f"TVL: ${tvl_str:>8} | "
                           f"Util: {snapshot.utilization*100:>5.1f}%{Colors.ENDC}")
                 elif result['status'] == 'NO_DATA':
                     print(f"{Colors.WARNING}{status_icon} {result['pool_name']:<30} | No positions found{Colors.ENDC}")
@@ -789,32 +806,6 @@ def main():
                 print_info(f"Successful Analyses: {len(successful_results)}/{len(results)}")
                 print()
 
-        # Success summary
-        print_header("Demo Complete")
-        print_success("Successfully executed full data pipeline:")
-        print_info("  ✓ Loaded configuration")
-        print_info("  ✓ Fetched data from Dune Analytics")
-        print_info("  ✓ Reconstructed pool state")
-        print_info("  ✓ Analyzed positions")
-        print_info("  ✓ Saved snapshot to file")
-        print()
-
-        print(f"{Colors.OKGREEN}Phases 4-6 Complete!{Colors.ENDC}")
-        print_info("  ✓ Risk metrics calculated (concentration, HF distribution)")
-        print_info("  ✓ Stress tests executed (price shock scenarios)")
-        print_info("  ✓ Composite risk score computed")
-        print()
-
-        print(f"{Colors.OKGREEN}Ready for next phases:{Colors.ENDC}")
-        print_info("  → Phase 7: Report Generation (HTML + charts)")
-        print_info("  → Phase 8: CLI & Automation")
-        print_info("  → Phase 9: Written Analysis")
-        print()
-
-        print(f"{Colors.OKCYAN}Tip: To analyze specific pools, set ANALYZE_POOLS environment variable{Colors.ENDC}")
-        print_info('  Example: ANALYZE_POOLS="0,2" python demo.py  (analyzes pools at index 0 and 2)')
-        print_info('  Example: ANALYZE_POOLS="all" python demo.py  (analyzes all pools - default)')
-        print()
 
     except KeyboardInterrupt:
         print_warning("\n\nDemo interrupted by user")
