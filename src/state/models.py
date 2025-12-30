@@ -48,8 +48,8 @@ class Position:
         Returns:
             Percentage buffer (e.g., 0.15 means 15% above liquidation)
         """
-        if self.health_factor == float('inf'):
-            return float('inf')
+        if self.health_factor == float("inf"):
+            return float("inf")
 
         return self.health_factor - 1.0
 
@@ -66,7 +66,7 @@ class Position:
         new_collateral_value = self.collateral_value_usd * (1 + price_shock_pct)
 
         if self.debt_value_usd == 0:
-            return float('inf')
+            return float("inf")
 
         return (new_collateral_value * self.lltv) / self.debt_value_usd
 
@@ -77,7 +77,7 @@ class Position:
         Returns:
             Percentage drop needed (e.g., 0.15 means 15% drop)
         """
-        if self.health_factor == float('inf') or self.health_factor <= 1.0:
+        if self.health_factor == float("inf") or self.health_factor <= 1.0:
             return 0.0
 
         # HF = (collateral_value * LLTV) / debt_value
@@ -88,18 +88,18 @@ class Position:
     def to_dict(self) -> dict:
         """Convert position to dictionary"""
         return {
-            'borrower': self.borrower,
-            'market_id': self.market_id,
-            'collateral_amount': self.collateral_amount,
-            'collateral_value_usd': self.collateral_value_usd,
-            'debt_amount': self.debt_amount,
-            'debt_value_usd': self.debt_value_usd,
-            'health_factor': self.health_factor,
-            'lltv': self.lltv,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
-            'liquidation_price': self.liquidation_price,
-            'is_healthy': self.is_healthy,
-            'liquidation_buffer': self.liquidation_buffer
+            "borrower": self.borrower,
+            "market_id": self.market_id,
+            "collateral_amount": self.collateral_amount,
+            "collateral_value_usd": self.collateral_value_usd,
+            "debt_amount": self.debt_amount,
+            "debt_value_usd": self.debt_value_usd,
+            "health_factor": self.health_factor,
+            "lltv": self.lltv,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "liquidation_price": self.liquidation_price,
+            "is_healthy": self.is_healthy,
+            "liquidation_buffer": self.liquidation_buffer,
         }
 
 
@@ -145,12 +145,14 @@ class PoolSnapshot:
     def avg_health_factor(self) -> float:
         """Simple average health factor across positions"""
         if not self.positions:
-            return float('inf')
+            return float("inf")
 
-        finite_hfs = [p.health_factor for p in self.positions if p.health_factor != float('inf')]
+        finite_hfs = [
+            p.health_factor for p in self.positions if p.health_factor != float("inf")
+        ]
 
         if not finite_hfs:
-            return float('inf')
+            return float("inf")
 
         return sum(finite_hfs) / len(finite_hfs)
 
@@ -158,22 +160,24 @@ class PoolSnapshot:
     def weighted_avg_health_factor(self) -> float:
         """Debt-weighted average health factor"""
         if not self.positions:
-            return float('inf')
+            return float("inf")
 
         total_debt = self.total_debt_usd
 
         if total_debt == 0:
-            return float('inf')
+            return float("inf")
 
         weighted_sum = sum(
             p.health_factor * p.debt_value_usd
             for p in self.positions
-            if p.health_factor != float('inf')
+            if p.health_factor != float("inf")
         )
 
         return weighted_sum / total_debt
 
-    def get_positions_by_health_factor(self, min_hf: float = None, max_hf: float = None) -> List[Position]:
+    def get_positions_by_health_factor(
+        self, min_hf: float = None, max_hf: float = None
+    ) -> List[Position]:
         """
         Filter positions by health factor range
 
@@ -209,18 +213,18 @@ class PoolSnapshot:
     def to_dict(self) -> dict:
         """Convert snapshot to dictionary"""
         return {
-            'market_id': self.market_id,
-            'pool_name': self.pool_name,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
-            'num_positions': self.num_positions,
-            'total_supply': self.total_supply,
-            'total_borrow': self.total_borrow,
-            'utilization': self.utilization,
-            'lltv': self.lltv,
-            'total_collateral_usd': self.total_collateral_usd,
-            'total_debt_usd': self.total_debt_usd,
-            'avg_health_factor': self.avg_health_factor,
-            'weighted_avg_health_factor': self.weighted_avg_health_factor,
-            'num_healthy_positions': self.num_healthy_positions,
-            'num_unhealthy_positions': self.num_unhealthy_positions
+            "market_id": self.market_id,
+            "pool_name": self.pool_name,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "num_positions": self.num_positions,
+            "total_supply": self.total_supply,
+            "total_borrow": self.total_borrow,
+            "utilization": self.utilization,
+            "lltv": self.lltv,
+            "total_collateral_usd": self.total_collateral_usd,
+            "total_debt_usd": self.total_debt_usd,
+            "avg_health_factor": self.avg_health_factor,
+            "weighted_avg_health_factor": self.weighted_avg_health_factor,
+            "num_healthy_positions": self.num_healthy_positions,
+            "num_unhealthy_positions": self.num_unhealthy_positions,
         }

@@ -9,6 +9,7 @@ from typing import List, Dict
 @dataclass
 class StressResult:
     """Results from a single stress scenario"""
+
     scenario_name: str
     price_shock_pct: float
     liquidatable_positions: int
@@ -21,14 +22,14 @@ class StressResult:
     def to_dict(self) -> Dict:
         """Convert to dictionary for serialization"""
         return {
-            'scenario_name': self.scenario_name,
-            'price_shock_pct': self.price_shock_pct,
-            'liquidatable_positions': self.liquidatable_positions,
-            'total_collateral_at_risk_usd': self.total_collateral_at_risk_usd,
-            'total_debt_at_risk_usd': self.total_debt_at_risk_usd,
-            'bad_debt_potential_usd': self.bad_debt_potential_usd,
-            'pct_pool_affected': self.pct_pool_affected,
-            'positions_count': len(self.positions_details)
+            "scenario_name": self.scenario_name,
+            "price_shock_pct": self.price_shock_pct,
+            "liquidatable_positions": self.liquidatable_positions,
+            "total_collateral_at_risk_usd": self.total_collateral_at_risk_usd,
+            "total_debt_at_risk_usd": self.total_debt_at_risk_usd,
+            "bad_debt_potential_usd": self.bad_debt_potential_usd,
+            "pct_pool_affected": self.pct_pool_affected,
+            "positions_count": len(self.positions_details),
         }
 
     def summary(self) -> str:

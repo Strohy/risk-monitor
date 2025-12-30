@@ -2,4 +2,4 @@
 
 from .scorer import RiskScorer
 
-__all__ = ['RiskScorer']
+__all__ = ["RiskScorer"]

@@ -61,7 +61,7 @@ def _format_dollars(text):
 
     def replace_amount(match):
         # Extract number from matched pattern, remove commas
-        amount_str = match.group(1).replace(',', '')
+        amount_str = match.group(1).replace(",", "")
         try:
             amount = float(amount_str)
             return f"${readable_number(amount)}"
@@ -70,7 +70,7 @@ def _format_dollars(text):
 
     # Match patterns like: $1,234.56 or $1,234 or $1234567.89
     # Captures the number part after the $
-    pattern = r'\$([0-9,]+\.?[0-9]*)'
+    pattern = r"\$([0-9,]+\.?[0-9]*)"
     return re.sub(pattern, replace_amount, text)
 
 
@@ -270,13 +270,21 @@ def analyze_snapshot(snapshot):
     ]
 
     for label, min_hf, max_hf in buckets:
-        positions = snapshot.get_positions_by_health_factor(min_hf=min_hf, max_hf=max_hf)
+        positions = snapshot.get_positions_by_health_factor(
+            min_hf=min_hf, max_hf=max_hf
+        )
         count = len(positions)
-        pct = (count / snapshot.num_positions * 100) if snapshot.num_positions > 0 else 0
+        pct = (
+            (count / snapshot.num_positions * 100) if snapshot.num_positions > 0 else 0
+        )
         debt = sum(p.debt_value_usd for p in positions)
-        debt_pct = (debt / snapshot.total_debt_usd * 100) if snapshot.total_debt_usd > 0 else 0
+        debt_pct = (
+            (debt / snapshot.total_debt_usd * 100) if snapshot.total_debt_usd > 0 else 0
+        )
 
-        print_info(f"{label}: {count} positions ({pct:.1f}%), ${debt:,.0f} debt ({debt_pct:.1f}%)")
+        print_info(
+            f"{label}: {count} positions ({pct:.1f}%), ${debt:,.0f} debt ({debt_pct:.1f}%)"
+        )
 
     print()
 
@@ -300,13 +308,19 @@ def analyze_snapshot(snapshot):
 
         total_risky_debt = sum(p.debt_value_usd for p in risky_positions)
         risky_debt_pct = total_risky_debt / snapshot.total_debt_usd * 100
-        print_warning(f"${total_risky_debt:,.2f} in debt at risk ({risky_debt_pct:.1f}% of pool)")
+        print_warning(
+            f"${total_risky_debt:,.2f} in debt at risk ({risky_debt_pct:.1f}% of pool)"
+        )
 
         # Show price drop needed
         min_drop = min(
-            p.liquidation_price_drop_pct() for p in risky_positions if p.health_factor > 1.0
+            p.liquidation_price_drop_pct()
+            for p in risky_positions
+            if p.health_factor > 1.0
         )
-        print_warning(f"Minimum price drop to trigger liquidations: {min_drop * 100:.2f}%")
+        print_warning(
+            f"Minimum price drop to trigger liquidations: {min_drop * 100:.2f}%"
+        )
 
 
 def calculate_risk_metrics(snapshot):
@@ -405,7 +419,9 @@ def run_stress_tests(snapshot):
         results_df = stress_engine.run_all_scenarios()
 
         # Display results table header
-        print(f"  {'Shock':<8} {'Positions':<11} {'Debt at Risk':<15} {'Pool %':<8} {'Bad Debt':<12}")
+        print(
+            f"  {'Shock':<8} {'Positions':<11} {'Debt at Risk':<15} {'Pool %':<8} {'Bad Debt':<12}"
+        )
         print(f"  {'-'*8} {'-'*11} {'-'*15} {'-'*8} {'-'*12}")
 
         # Display results table
@@ -570,22 +586,30 @@ def calculate_risk_score(snapshot, risk_metrics, stress_engine):
         # Risk level interpretation
         print(f"{Colors.BOLD}Risk Assessment:{Colors.ENDC}")
         if composite_score >= 80:
-            print_error("CRITICAL: This pool has severe risk factors requiring immediate attention")
+            print_error(
+                "CRITICAL: This pool has severe risk factors requiring immediate attention"
+            )
         elif composite_score >= 65:
             print_warning(
                 "HIGH RISK: Significant risk factors detected, close monitoring recommended"
             )
         elif composite_score >= 45:
-            print_info("MODERATE RISK: Some risk factors present, regular monitoring advised")
+            print_info(
+                "MODERATE RISK: Some risk factors present, regular monitoring advised"
+            )
         elif composite_score >= 25:
-            print_success("LOW RISK: Pool appears relatively healthy with minor risk factors")
+            print_success(
+                "LOW RISK: Pool appears relatively healthy with minor risk factors"
+            )
         else:
             print_success("MINIMAL RISK: Pool appears very healthy")
 
         print()
 
         # Highlight top risk factor
-        sorted_components = sorted(component_scores.items(), key=lambda x: x[1], reverse=True)
+        sorted_components = sorted(
+            component_scores.items(), key=lambda x: x[1], reverse=True
+        )
         if sorted_components[0][1] > 60:
             print_warning(
                 f"Primary concern: {sorted_components[0][0].replace('_', ' ').title()} "
@@ -630,9 +654,13 @@ def main():
     """Main demo function"""
     # Parse command line arguments
     import argparse
-    parser = argparse.ArgumentParser(description='Morpho Blue Risk Monitor')
-    parser.add_argument('--save-report', action='store_true',
-                       help='Save markdown reports for analyzed pools')
+
+    parser = argparse.ArgumentParser(description="Morpho Blue Risk Monitor")
+    parser.add_argument(
+        "--save-report",
+        action="store_true",
+        help="Save markdown reports for analyzed pools",
+    )
     args = parser.parse_args()
 
     print(f"\n{Colors.HEADER}{Colors.BOLD}")
@@ -692,13 +720,15 @@ def main():
                     print_info("  1. The market ID is incorrect")
                     print_info("  2. The pool has no active positions")
                     print_info("  3. The Dune query needs adjustment")
-                    results.append({
-                        'pool_name': pool_config['name'],
-                        'status': 'NO_DATA',
-                        'snapshot': None,
-                        'risk_score': None,
-                        'risk_level': None
-                    })
+                    results.append(
+                        {
+                            "pool_name": pool_config["name"],
+                            "status": "NO_DATA",
+                            "snapshot": None,
+                            "risk_score": None,
+                            "risk_level": None,
+                        }
+                    )
                     continue
 
                 # Reconstruct state
@@ -734,29 +764,35 @@ def main():
                         snapshot, risk_metrics, stress_engine, scorer
                     )
                     if timestamped_path:
-                        print_success(f"Saved timestamped report: {timestamped_path.name}")
+                        print_success(
+                            f"Saved timestamped report: {timestamped_path.name}"
+                        )
                     if latest_path:
                         print_success(f"Saved latest report: {latest_path.name}")
 
                 # Store results
-                results.append({
-                    'pool_name': pool_config['name'],
-                    'status': 'SUCCESS',
-                    'snapshot': snapshot,
-                    'risk_score': risk_score,
-                    'risk_level': risk_level
-                })
+                results.append(
+                    {
+                        "pool_name": pool_config["name"],
+                        "status": "SUCCESS",
+                        "snapshot": snapshot,
+                        "risk_score": risk_score,
+                        "risk_level": risk_level,
+                    }
+                )
 
             except Exception as e:
                 print_error(f"Failed to analyze pool {pool_config['name']}: {e}")
-                results.append({
-                    'pool_name': pool_config['name'],
-                    'status': 'ERROR',
-                    'snapshot': None,
-                    'risk_score': None,
-                    'risk_level': None,
-                    'error': str(e)
-                })
+                results.append(
+                    {
+                        "pool_name": pool_config["name"],
+                        "status": "ERROR",
+                        "snapshot": None,
+                        "risk_score": None,
+                        "risk_level": None,
+                        "error": str(e),
+                    }
+                )
                 continue
 
         # Summary of all pools
@@ -765,12 +801,12 @@ def main():
 
             print(f"{Colors.BOLD}Analysis Results:{Colors.ENDC}")
             for result in results:
-                status_icon = "[OK]" if result['status'] == 'SUCCESS' else "[FAIL]"
+                status_icon = "[OK]" if result["status"] == "SUCCESS" else "[FAIL]"
 
-                if result['status'] == 'SUCCESS':
-                    risk_score = result['risk_score']
-                    risk_level = result['risk_level']
-                    snapshot = result['snapshot']
+                if result["status"] == "SUCCESS":
+                    risk_score = result["risk_score"]
+                    risk_level = result["risk_level"]
+                    snapshot = result["snapshot"]
 
                     # Color code by risk level
                     if risk_level == "CRITICAL":
@@ -783,29 +819,38 @@ def main():
                         color = Colors.OKGREEN
 
                     tvl_str = readable_number(snapshot.total_supply)
-                    print(f"{color}{status_icon} {result['pool_name']:<30} | "
-                          f"Score: {risk_score:>5.1f} ({risk_level:<8}) | "
-                          f"TVL: ${tvl_str:>8} | "
-                          f"Util: {snapshot.utilization*100:>5.1f}%{Colors.ENDC}")
-                elif result['status'] == 'NO_DATA':
-                    print(f"{Colors.WARNING}{status_icon} {result['pool_name']:<30} | No positions found{Colors.ENDC}")
+                    print(
+                        f"{color}{status_icon} {result['pool_name']:<30} | "
+                        f"Score: {risk_score:>5.1f} ({risk_level:<8}) | "
+                        f"TVL: ${tvl_str:>8} | "
+                        f"Util: {snapshot.utilization*100:>5.1f}%{Colors.ENDC}"
+                    )
+                elif result["status"] == "NO_DATA":
+                    print(
+                        f"{Colors.WARNING}{status_icon} {result['pool_name']:<30} | No positions found{Colors.ENDC}"
+                    )
                 else:
-                    print(f"{Colors.FAIL}{status_icon} {result['pool_name']:<30} | Error: {result.get('error', 'Unknown')}{Colors.ENDC}")
+                    print(
+                        f"{Colors.FAIL}{status_icon} {result['pool_name']:<30} | Error: {result.get('error', 'Unknown')}{Colors.ENDC}"
+                    )
 
             print()
 
             # Aggregate statistics
-            successful_results = [r for r in results if r['status'] == 'SUCCESS']
+            successful_results = [r for r in results if r["status"] == "SUCCESS"]
             if successful_results:
-                total_tvl = sum(r['snapshot'].total_supply for r in successful_results)
-                avg_risk_score = sum(r['risk_score'] for r in successful_results) / len(successful_results)
+                total_tvl = sum(r["snapshot"].total_supply for r in successful_results)
+                avg_risk_score = sum(r["risk_score"] for r in successful_results) / len(
+                    successful_results
+                )
 
                 print(f"{Colors.BOLD}Aggregate Statistics:{Colors.ENDC}")
                 print_info(f"Total TVL: ${total_tvl:,.2f}")
                 print_info(f"Average Risk Score: {avg_risk_score:.1f}")
-                print_info(f"Successful Analyses: {len(successful_results)}/{len(results)}")
+                print_info(
+                    f"Successful Analyses: {len(successful_results)}/{len(results)}"
+                )
                 print()
-
 
     except KeyboardInterrupt:
         print_warning("\n\nDemo interrupted by user")

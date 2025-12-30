@@ -34,7 +34,7 @@ class MarkdownReportGenerator:
         stress_engine: StressTestEngine,
         risk_scorer: RiskScorer,
         save_timestamped: bool = True,
-        save_latest: bool = True
+        save_latest: bool = True,
     ) -> tuple[Optional[Path], Optional[Path]]:
         """
         Generate markdown report for a pool
@@ -51,7 +51,9 @@ class MarkdownReportGenerator:
             Tuple of (timestamped_path, latest_path)
         """
         # Generate report content
-        content = self._generate_content(snapshot, risk_metrics, stress_engine, risk_scorer)
+        content = self._generate_content(
+            snapshot, risk_metrics, stress_engine, risk_scorer
+        )
 
         # Create pool-specific directory
         pool_name_safe = snapshot.pool_name.replace("/", "-")
@@ -81,7 +83,7 @@ class MarkdownReportGenerator:
             filename = f"{timestamp}.md"
             timestamped_path = pool_dir / filename
 
-            with open(timestamped_path, 'w', encoding='utf-8') as f:
+            with open(timestamped_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
         # Save latest version (with same chart references pointing to timestamped images)
@@ -89,7 +91,7 @@ class MarkdownReportGenerator:
             filename = "latest.md"
             latest_path = pool_dir / filename
 
-            with open(latest_path, 'w', encoding='utf-8') as f:
+            with open(latest_path, "w", encoding="utf-8") as f:
                 f.write(content)
 
         return timestamped_path, latest_path
@@ -99,7 +101,7 @@ class MarkdownReportGenerator:
         snapshot: PoolSnapshot,
         risk_metrics: RiskMetrics,
         stress_engine: StressTestEngine,
-        risk_scorer: RiskScorer
+        risk_scorer: RiskScorer,
     ) -> str:
         """Generate markdown content"""
 
@@ -139,15 +141,19 @@ class MarkdownReportGenerator:
 
 **Overall Risk Score:** {composite_score:.1f}/100 ({risk_level})"""
 
-    def _generate_executive_summary(self, snapshot: PoolSnapshot, risk_scorer: RiskScorer) -> str:
+    def _generate_executive_summary(
+        self, snapshot: PoolSnapshot, risk_scorer: RiskScorer
+    ) -> str:
         """Generate executive summary section"""
         composite_score = risk_scorer.calculate_composite_score()
         risk_level = risk_scorer.get_risk_level(composite_score)
         component_scores = risk_scorer.get_component_scores()
 
         # Determine primary concern
-        sorted_components = sorted(component_scores.items(), key=lambda x: x[1], reverse=True)
-        primary_concern = sorted_components[0][0].replace('_', ' ').title()
+        sorted_components = sorted(
+            component_scores.items(), key=lambda x: x[1], reverse=True
+        )
+        primary_concern = sorted_components[0][0].replace("_", " ").title()
         primary_score = sorted_components[0][1]
 
         # Risk interpretation
@@ -158,7 +164,9 @@ class MarkdownReportGenerator:
         elif composite_score >= 45:
             interpretation = "**MODERATE RISK**: Some risk factors present. Regular monitoring advised."
         elif composite_score >= 25:
-            interpretation = "**LOW RISK**: Pool appears relatively healthy with minor risk factors."
+            interpretation = (
+                "**LOW RISK**: Pool appears relatively healthy with minor risk factors."
+            )
         else:
             interpretation = "**MINIMAL RISK**: Pool appears very healthy."
 
@@ -221,10 +229,14 @@ Distribution of debt by health factor ranges:
 
         # Add warnings if needed
         warnings = []
-        if concentration['top_5_pct'] > 50:
-            warnings.append(f"High concentration: Top 5 borrowers control {concentration['top_5_pct']:.1f}% of debt")
-        if hf_dist['hf_below_1.05'] > 10:
-            warnings.append(f"Critical positions: {hf_dist['hf_below_1.05']:.1f}% of debt has health factor below 1.05")
+        if concentration["top_5_pct"] > 50:
+            warnings.append(
+                f"High concentration: Top 5 borrowers control {concentration['top_5_pct']:.1f}% of debt"
+            )
+        if hf_dist["hf_below_1.05"] > 10:
+            warnings.append(
+                f"Critical positions: {hf_dist['hf_below_1.05']:.1f}% of debt has health factor below 1.05"
+            )
 
         if warnings:
             content += "\n\n**Warnings:**\n" + "\n".join(f"- {w}" for w in warnings)
@@ -245,11 +257,11 @@ Testing pool resilience under collateral price shocks:
 """
 
         for _, row in results_df.iterrows():
-            shock = row['price_shock_pct']
-            positions = int(row['liquidatable_positions'])
-            debt_risk = row['debt_at_risk_usd']
-            pct = row['pct_pool_affected']
-            bad_debt = row['bad_debt_potential_usd']
+            shock = row["price_shock_pct"]
+            positions = int(row["liquidatable_positions"])
+            debt_risk = row["debt_at_risk_usd"]
+            pct = row["pct_pool_affected"]
+            bad_debt = row["bad_debt_potential_usd"]
 
             content += f"| {shock:+.0f}% | {positions} | ${self._format_number(debt_risk)} | {pct:.1f}% | ${self._format_number(bad_debt)} |\n"
 
@@ -269,12 +281,16 @@ Testing pool resilience under collateral price shocks:
 
         content += "\n### Liquidation Thresholds\n\n"
         if threshold_10:
-            content += f"- **10% of pool at risk** at: {threshold_10:+.0f}% price shock\n"
+            content += (
+                f"- **10% of pool at risk** at: {threshold_10:+.0f}% price shock\n"
+            )
         else:
             content += "- **10% threshold**: Not reached in tested scenarios\n"
 
         if threshold_50:
-            content += f"- **50% of pool at risk** at: {threshold_50:+.0f}% price shock\n"
+            content += (
+                f"- **50% of pool at risk** at: {threshold_50:+.0f}% price shock\n"
+            )
         else:
             content += "- **50% threshold**: Not reached in tested scenarios\n"
 
@@ -324,21 +340,22 @@ Testing pool resilience under collateral price shocks:
         hf_chart = f"\n\n![Health Factor Distribution](images/{timestamp}/health_factor_distribution.png)\n"
         content = content.replace(
             "### Health Factor Distribution",
-            f"### Health Factor Distribution\n{hf_chart}"
+            f"### Health Factor Distribution\n{hf_chart}",
         )
 
         # Insert stress test chart after Stress Test Results header
-        stress_chart = f"\n![Stress Test Cascade](images/{timestamp}/stress_test_cascade.png)\n"
+        stress_chart = (
+            f"\n![Stress Test Cascade](images/{timestamp}/stress_test_cascade.png)\n"
+        )
         content = content.replace(
             "## Stress Test Results\n\nTesting pool resilience under collateral price shocks:",
-            f"## Stress Test Results\n\nTesting pool resilience under collateral price shocks:\n{stress_chart}"
+            f"## Stress Test Results\n\nTesting pool resilience under collateral price shocks:\n{stress_chart}",
         )
 
         # Insert concentration chart after Concentration Risk header
         conc_chart = f"\n![Borrower Concentration](images/{timestamp}/borrower_concentration.png)\n"
         content = content.replace(
-            "### Concentration Risk",
-            f"### Concentration Risk\n{conc_chart}"
+            "### Concentration Risk", f"### Concentration Risk\n{conc_chart}"
         )
 
         return content

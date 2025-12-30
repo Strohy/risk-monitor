@@ -48,20 +48,25 @@ class StressTestEngine:
                 # Shortfall = debt that can't be covered by collateral
                 shortfall = max(0, pos.debt_value_usd - new_collateral_value)
 
-                liquidatable_positions.append({
-                    'borrower': pos.borrower,
-                    'original_hf': pos.health_factor,
-                    'new_hf': new_hf,
-                    'collateral_value': new_collateral_value,
-                    'debt_value': pos.debt_value_usd,
-                    'shortfall': shortfall,
-                    'liquidation_penalty': new_collateral_value * 0.1  # Assume 10% liquidation penalty
-                })
+                liquidatable_positions.append(
+                    {
+                        "borrower": pos.borrower,
+                        "original_hf": pos.health_factor,
+                        "new_hf": new_hf,
+                        "collateral_value": new_collateral_value,
+                        "debt_value": pos.debt_value_usd,
+                        "shortfall": shortfall,
+                        "liquidation_penalty": new_collateral_value
+                        * 0.1,  # Assume 10% liquidation penalty
+                    }
+                )
 
         # Calculate aggregate metrics
-        total_collateral_at_risk = sum(p['collateral_value'] for p in liquidatable_positions)
-        total_debt_at_risk = sum(p['debt_value'] for p in liquidatable_positions)
-        bad_debt_potential = sum(p['shortfall'] for p in liquidatable_positions)
+        total_collateral_at_risk = sum(
+            p["collateral_value"] for p in liquidatable_positions
+        )
+        total_debt_at_risk = sum(p["debt_value"] for p in liquidatable_positions)
+        bad_debt_potential = sum(p["shortfall"] for p in liquidatable_positions)
 
         pct_affected = (
             (total_debt_at_risk / self.snapshot.total_debt_usd * 100)
@@ -77,7 +82,7 @@ class StressTestEngine:
             total_debt_at_risk_usd=total_debt_at_risk,
             bad_debt_potential_usd=bad_debt_potential,
             pct_pool_affected=pct_affected,
-            positions_details=liquidatable_positions
+            positions_details=liquidatable_positions,
         )
 
     def run_all_scenarios(self) -> pd.DataFrame:
@@ -92,21 +97,21 @@ class StressTestEngine:
         for shock in self.scenarios:
             result = self.apply_price_shock(shock)
 
-            results.append({
-                'price_shock_pct': shock * 100,
-                'liquidatable_positions': result.liquidatable_positions,
-                'collateral_at_risk_usd': result.total_collateral_at_risk_usd,
-                'debt_at_risk_usd': result.total_debt_at_risk_usd,
-                'bad_debt_potential_usd': result.bad_debt_potential_usd,
-                'pct_pool_affected': result.pct_pool_affected
-            })
+            results.append(
+                {
+                    "price_shock_pct": shock * 100,
+                    "liquidatable_positions": result.liquidatable_positions,
+                    "collateral_at_risk_usd": result.total_collateral_at_risk_usd,
+                    "debt_at_risk_usd": result.total_debt_at_risk_usd,
+                    "bad_debt_potential_usd": result.bad_debt_potential_usd,
+                    "pct_pool_affected": result.pct_pool_affected,
+                }
+            )
 
         return pd.DataFrame(results)
 
     def find_cliff_points(
-        self,
-        results: pd.DataFrame = None,
-        threshold: float = 50.0
+        self, results: pd.DataFrame = None, threshold: float = 50.0
     ) -> List[Dict]:
         """
         Identify non-linear risk jumps (cliff points) in liquidation curve
@@ -130,31 +135,33 @@ class StressTestEngine:
         cliffs = []
 
         for i in range(1, len(results)):
-            prev_risk = results.iloc[i-1]['pct_pool_affected']
-            curr_risk = results.iloc[i]['pct_pool_affected']
+            prev_risk = results.iloc[i - 1]["pct_pool_affected"]
+            curr_risk = results.iloc[i]["pct_pool_affected"]
 
             # Calculate percentage increase in risk
             if prev_risk > 0:
                 risk_increase_pct = ((curr_risk - prev_risk) / prev_risk) * 100
             elif curr_risk > 0:
                 # First scenario with risk (coming from 0%)
-                risk_increase_pct = float('inf')
+                risk_increase_pct = float("inf")
             else:
                 continue
 
             if risk_increase_pct > threshold:
-                cliffs.append({
-                    'from_shock_pct': results.iloc[i-1]['price_shock_pct'],
-                    'to_shock_pct': results.iloc[i]['price_shock_pct'],
-                    'risk_jump_pct': risk_increase_pct,
-                    'from_pool_affected': prev_risk,
-                    'to_pool_affected': curr_risk,
-                    'absolute_increase': curr_risk - prev_risk,
-                    'new_liquidations': (
-                        results.iloc[i]['liquidatable_positions'] -
-                        results.iloc[i-1]['liquidatable_positions']
-                    )
-                })
+                cliffs.append(
+                    {
+                        "from_shock_pct": results.iloc[i - 1]["price_shock_pct"],
+                        "to_shock_pct": results.iloc[i]["price_shock_pct"],
+                        "risk_jump_pct": risk_increase_pct,
+                        "from_pool_affected": prev_risk,
+                        "to_pool_affected": curr_risk,
+                        "absolute_increase": curr_risk - prev_risk,
+                        "new_liquidations": (
+                            results.iloc[i]["liquidatable_positions"]
+                            - results.iloc[i - 1]["liquidatable_positions"]
+                        ),
+                    }
+                )
 
         return cliffs
 
@@ -171,8 +178,8 @@ class StressTestEngine:
         results = self.run_all_scenarios()
 
         for _, row in results.iterrows():
-            if row['pct_pool_affected'] >= target_pct:
-                return row['price_shock_pct']
+            if row["pct_pool_affected"] >= target_pct:
+                return row["price_shock_pct"]
 
         return None  # Target not reached even at worst scenario
 
@@ -188,18 +195,20 @@ class StressTestEngine:
 
         # Calculate velocity of risk increase
         if len(results) >= 2:
-            avg_risk_increase = results['pct_pool_affected'].diff().mean()
-            max_risk_increase = results['pct_pool_affected'].diff().max()
+            avg_risk_increase = results["pct_pool_affected"].diff().mean()
+            max_risk_increase = results["pct_pool_affected"].diff().max()
         else:
             avg_risk_increase = 0
             max_risk_increase = 0
 
         return {
-            'cliff_points_count': len(cliffs),
-            'avg_risk_increase_per_scenario': avg_risk_increase,
-            'max_risk_increase_per_scenario': max_risk_increase,
-            'has_severe_cliffs': len(cliffs) > 0,
-            'worst_cliff': max(cliffs, key=lambda x: x['risk_jump_pct']) if cliffs else None
+            "cliff_points_count": len(cliffs),
+            "avg_risk_increase_per_scenario": avg_risk_increase,
+            "max_risk_increase_per_scenario": max_risk_increase,
+            "has_severe_cliffs": len(cliffs) > 0,
+            "worst_cliff": (
+                max(cliffs, key=lambda x: x["risk_jump_pct"]) if cliffs else None
+            ),
         }
 
     def generate_summary(self) -> str:

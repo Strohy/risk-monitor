@@ -14,15 +14,15 @@ from src.state.models import Position, PoolSnapshot
 def pool_config():
     """Sample pool configuration"""
     return {
-        'name': 'wstETH/USDC',
-        'market_id': '0xabc123',
-        'collateral': 'wstETH',
-        'collateral_address': '0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0',
-        'collateral_decimals': 18,  # wstETH has 18 decimals
-        'loan': 'USDC',
-        'loan_address': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        'lltv': 0.86,
-        'decimals': 6  # USDC has 6 decimals
+        "name": "wstETH/USDC",
+        "market_id": "0xabc123",
+        "collateral": "wstETH",
+        "collateral_address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+        "collateral_decimals": 18,  # wstETH has 18 decimals
+        "loan": "USDC",
+        "loan_address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+        "lltv": 0.86,
+        "decimals": 6,  # USDC has 6 decimals
     }
 
 
@@ -30,60 +30,66 @@ def pool_config():
 def prices():
     """Sample token prices"""
     return {
-        '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0': 2500.0,  # wstETH
-        '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 1.0      # USDC
+        "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0": 2500.0,  # wstETH
+        "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 1.0,  # USDC
     }
 
 
 @pytest.fixture
 def positions_df():
     """Sample positions DataFrame (values in raw USDC units with 6 decimals)"""
-    return pd.DataFrame([
-        {
-            'market_id': '0xabc123',
-            'borrower': '0x111',
-            'active_borrow_assets': 10000_000000,  # 10,000 USDC in raw units (10000 * 10^6)
-            'last_borrow_time': '2024-01-01 12:00:00'
-        },
-        {
-            'market_id': '0xabc123',
-            'borrower': '0x222',
-            'active_borrow_assets': 5000_000000,  # 5,000 USDC in raw units (5000 * 10^6)
-            'last_borrow_time': '2024-01-01 12:00:00'
-        }
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "market_id": "0xabc123",
+                "borrower": "0x111",
+                "active_borrow_assets": 10000_000000,  # 10,000 USDC in raw units (10000 * 10^6)
+                "last_borrow_time": "2024-01-01 12:00:00",
+            },
+            {
+                "market_id": "0xabc123",
+                "borrower": "0x222",
+                "active_borrow_assets": 5000_000000,  # 5,000 USDC in raw units (5000 * 10^6)
+                "last_borrow_time": "2024-01-01 12:00:00",
+            },
+        ]
+    )
 
 
 @pytest.fixture
 def collateral_df():
     """Sample collateral DataFrame (collateral in raw wstETH units with 18 decimals)"""
-    return pd.DataFrame([
-        {
-            'market_id': '0xabc123',
-            'borrower': '0x111',
-            'collateral': 10_000000000000000000,  # 10 wstETH in raw units (10 * 10^18)
-            'block_time': '2024-01-01 12:00:00'
-        },
-        {
-            'market_id': '0xabc123',
-            'borrower': '0x222',
-            'collateral': 5_000000000000000000,  # 5 wstETH in raw units (5 * 10^18)
-            'block_time': '2024-01-01 12:00:00'
-        }
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "market_id": "0xabc123",
+                "borrower": "0x111",
+                "collateral": 10_000000000000000000,  # 10 wstETH in raw units (10 * 10^18)
+                "block_time": "2024-01-01 12:00:00",
+            },
+            {
+                "market_id": "0xabc123",
+                "borrower": "0x222",
+                "collateral": 5_000000000000000000,  # 5 wstETH in raw units (5 * 10^18)
+                "block_time": "2024-01-01 12:00:00",
+            },
+        ]
+    )
 
 
 @pytest.fixture
 def pool_state_df():
     """Sample pool state DataFrame (values in raw USDC units with 6 decimals)"""
-    return pd.DataFrame([
-        {
-            'market_id': '0xabc123',
-            'call_block_time': '2024-01-01 12:00:00',
-            'output_totalSupplyAssets': 100000_000000,  # 100,000 USDC in raw units
-            'output_totalBorrowAssets': 50000_000000    # 50,000 USDC in raw units
-        }
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "market_id": "0xabc123",
+                "call_block_time": "2024-01-01 12:00:00",
+                "output_totalSupplyAssets": 100000_000000,  # 100,000 USDC in raw units
+                "output_totalBorrowAssets": 50000_000000,  # 50,000 USDC in raw units
+            }
+        ]
+    )
 
 
 @pytest.fixture
@@ -101,25 +107,33 @@ class TestStateReconstructor:
 
         assert reconstructor.pool_config == pool_config
         # Prices should be normalized to lowercase
-        assert '0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0' in reconstructor.prices
+        assert "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0" in reconstructor.prices
 
     def test_get_token_price_found(self, reconstructor):
         """Test getting token price that exists"""
-        price = reconstructor._get_token_price('0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0')
+        price = reconstructor._get_token_price(
+            "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+        )
         assert price == 2500.0
 
     def test_get_token_price_not_found(self, reconstructor):
         """Test getting token price that doesn't exist"""
-        price = reconstructor._get_token_price('0xdeadbeef')
+        price = reconstructor._get_token_price("0xdeadbeef")
         assert price == 0.0
 
     def test_get_token_price_case_insensitive(self, reconstructor):
         """Test that price lookup is case insensitive"""
-        price1 = reconstructor._get_token_price('0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0')
-        price2 = reconstructor._get_token_price('0X7F39C581F595B53C5CB19BD0B3F8DA6C935E2CA0')
+        price1 = reconstructor._get_token_price(
+            "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+        )
+        price2 = reconstructor._get_token_price(
+            "0X7F39C581F595B53C5CB19BD0B3F8DA6C935E2CA0"
+        )
         assert price1 == price2 == 2500.0
 
-    def test_reconstruct_positions_success(self, reconstructor, positions_df, collateral_df):
+    def test_reconstruct_positions_success(
+        self, reconstructor, positions_df, collateral_df
+    ):
         """Test successful position reconstruction"""
         positions = reconstructor.reconstruct_positions(positions_df, collateral_df)
 
@@ -128,7 +142,7 @@ class TestStateReconstructor:
 
         # Check first position
         pos1 = positions[0]
-        assert pos1.borrower == '0x111'
+        assert pos1.borrower == "0x111"
         assert pos1.collateral_amount == 10.0
         assert pos1.collateral_value_usd == 10.0 * 2500.0  # 25000
         assert pos1.debt_value_usd == 10000.0
@@ -144,80 +158,86 @@ class TestStateReconstructor:
 
         assert len(positions) == 0
 
-    def test_reconstruct_positions_missing_collateral(self, reconstructor, positions_df):
+    def test_reconstruct_positions_missing_collateral(
+        self, reconstructor, positions_df
+    ):
         """Test reconstruction when some positions lack collateral"""
         # Collateral only for one borrower
-        partial_collateral = pd.DataFrame([
-            {
-                'market_id': '0xabc123',
-                'borrower': '0x111',
-                'collateral': 10.0,
-                'block_time': '2024-01-01'
-            }
-        ])
+        partial_collateral = pd.DataFrame(
+            [
+                {
+                    "market_id": "0xabc123",
+                    "borrower": "0x111",
+                    "collateral": 10.0,
+                    "block_time": "2024-01-01",
+                }
+            ]
+        )
 
-        positions = reconstructor.reconstruct_positions(positions_df, partial_collateral)
+        positions = reconstructor.reconstruct_positions(
+            positions_df, partial_collateral
+        )
 
         # Should still get 2 positions (missing collateral filled with 0)
         assert len(positions) == 2
 
         # Position 0x222 should have 0 collateral
-        pos_222 = [p for p in positions if p.borrower == '0x222'][0]
+        pos_222 = [p for p in positions if p.borrower == "0x222"][0]
         assert pos_222.collateral_amount == 0.0
 
     def test_reconstruct_positions_zero_debt(self, reconstructor, collateral_df):
         """Test reconstruction with zero debt (infinite HF)"""
-        zero_debt_df = pd.DataFrame([
-            {
-                'market_id': '0xabc123',
-                'borrower': '0x111',
-                'active_borrow_assets': 0.0,
-                'last_borrow_time': '2024-01-01'
-            }
-        ])
+        zero_debt_df = pd.DataFrame(
+            [
+                {
+                    "market_id": "0xabc123",
+                    "borrower": "0x111",
+                    "active_borrow_assets": 0.0,
+                    "last_borrow_time": "2024-01-01",
+                }
+            ]
+        )
 
         positions = reconstructor.reconstruct_positions(zero_debt_df, collateral_df)
 
         assert len(positions) == 1
-        assert positions[0].health_factor == float('inf')
+        assert positions[0].health_factor == float("inf")
 
-    def test_create_snapshot_success(self, reconstructor, positions_df, collateral_df, pool_state_df):
+    def test_create_snapshot_success(
+        self, reconstructor, positions_df, collateral_df, pool_state_df
+    ):
         """Test successful snapshot creation"""
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            pool_state_df,
-            timestamp=datetime(2024, 1, 1)
+            positions_df, collateral_df, pool_state_df, timestamp=datetime(2024, 1, 1)
         )
 
         assert isinstance(snapshot, PoolSnapshot)
-        assert snapshot.market_id == '0xabc123'
-        assert snapshot.pool_name == 'wstETH/USDC'
+        assert snapshot.market_id == "0xabc123"
+        assert snapshot.pool_name == "wstETH/USDC"
         assert snapshot.num_positions == 2
         assert snapshot.total_supply == 100000.0
         assert snapshot.total_borrow == 50000.0
         assert snapshot.utilization == 0.5
 
-    def test_create_snapshot_with_timestamp(self, reconstructor, positions_df, collateral_df, pool_state_df):
+    def test_create_snapshot_with_timestamp(
+        self, reconstructor, positions_df, collateral_df, pool_state_df
+    ):
         """Test snapshot creation with custom timestamp"""
         custom_time = datetime(2024, 6, 15, 10, 30)
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            pool_state_df,
-            timestamp=custom_time
+            positions_df, collateral_df, pool_state_df, timestamp=custom_time
         )
 
         assert snapshot.timestamp == custom_time
 
-    def test_create_snapshot_empty_pool_state(self, reconstructor, positions_df, collateral_df):
+    def test_create_snapshot_empty_pool_state(
+        self, reconstructor, positions_df, collateral_df
+    ):
         """Test snapshot creation with empty pool state"""
         empty_pool_state = pd.DataFrame()
 
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            empty_pool_state
+            positions_df, collateral_df, empty_pool_state
         )
 
         # Should still create snapshot with aggregated values
@@ -226,18 +246,17 @@ class TestStateReconstructor:
         # Total supply/borrow will be derived from positions
         assert snapshot.total_collateral_usd > 0
 
-    def test_save_and_load_snapshot(self, reconstructor, positions_df, collateral_df, pool_state_df):
+    def test_save_and_load_snapshot(
+        self, reconstructor, positions_df, collateral_df, pool_state_df
+    ):
         """Test saving and loading snapshot to/from file"""
         # Create snapshot
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            pool_state_df,
-            timestamp=datetime(2024, 1, 1)
+            positions_df, collateral_df, pool_state_df, timestamp=datetime(2024, 1, 1)
         )
 
         # Save to temp file
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
             temp_path = f.name
 
         try:
@@ -246,12 +265,12 @@ class TestStateReconstructor:
             # Verify file exists and contains data
             assert Path(temp_path).exists()
 
-            with open(temp_path, 'r') as f:
+            with open(temp_path, "r") as f:
                 data = json.load(f)
 
-            assert 'snapshot' in data
-            assert 'positions' in data
-            assert len(data['positions']) == 2
+            assert "snapshot" in data
+            assert "positions" in data
+            assert len(data["positions"]) == 2
 
             # Load snapshot back
             loaded_snapshot = reconstructor.load_snapshot(temp_path)
@@ -273,12 +292,12 @@ class TestStateReconstructor:
             if Path(temp_path).exists():
                 Path(temp_path).unlink()
 
-    def test_save_snapshot_creates_directory(self, reconstructor, positions_df, collateral_df, pool_state_df):
+    def test_save_snapshot_creates_directory(
+        self, reconstructor, positions_df, collateral_df, pool_state_df
+    ):
         """Test that save_snapshot creates parent directories"""
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            pool_state_df
+            positions_df, collateral_df, pool_state_df
         )
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -290,23 +309,27 @@ class TestStateReconstructor:
 
     def test_reconstruct_positions_health_factor_calculation(self, reconstructor):
         """Test that health factors are calculated correctly"""
-        positions_df = pd.DataFrame([
-            {
-                'market_id': '0xabc123',
-                'borrower': '0x111',
-                'active_borrow_assets': 10000.0,
-                'last_borrow_time': '2024-01-01'
-            }
-        ])
+        positions_df = pd.DataFrame(
+            [
+                {
+                    "market_id": "0xabc123",
+                    "borrower": "0x111",
+                    "active_borrow_assets": 10000.0,
+                    "last_borrow_time": "2024-01-01",
+                }
+            ]
+        )
 
-        collateral_df = pd.DataFrame([
-            {
-                'market_id': '0xabc123',
-                'borrower': '0x111',
-                'collateral': 5.0,  # 5 wstETH at $2500 = $12500
-                'block_time': '2024-01-01'
-            }
-        ])
+        collateral_df = pd.DataFrame(
+            [
+                {
+                    "market_id": "0xabc123",
+                    "borrower": "0x111",
+                    "collateral": 5.0,  # 5 wstETH at $2500 = $12500
+                    "block_time": "2024-01-01",
+                }
+            ]
+        )
 
         positions = reconstructor.reconstruct_positions(positions_df, collateral_df)
 
@@ -319,21 +342,19 @@ class TestStateReconstructor:
     def test_reconstruct_positions_with_malformed_data(self, reconstructor):
         """Test reconstruction handles malformed data gracefully"""
         # Missing required fields
-        bad_positions = pd.DataFrame([
-            {
-                'market_id': '0xabc123',
-                'borrower': '0x111',
-                # Missing active_borrow_assets
-            }
-        ])
+        bad_positions = pd.DataFrame(
+            [
+                {
+                    "market_id": "0xabc123",
+                    "borrower": "0x111",
+                    # Missing active_borrow_assets
+                }
+            ]
+        )
 
-        bad_collateral = pd.DataFrame([
-            {
-                'market_id': '0xabc123',
-                'borrower': '0x111',
-                'collateral': 10.0
-            }
-        ])
+        bad_collateral = pd.DataFrame(
+            [{"market_id": "0xabc123", "borrower": "0x111", "collateral": 10.0}]
+        )
 
         # Should handle gracefully and return empty or partial results
         positions = reconstructor.reconstruct_positions(bad_positions, bad_collateral)
@@ -341,12 +362,12 @@ class TestStateReconstructor:
         # Should either skip bad records or use defaults
         assert isinstance(positions, list)
 
-    def test_snapshot_aggregates_match_positions(self, reconstructor, positions_df, collateral_df, pool_state_df):
+    def test_snapshot_aggregates_match_positions(
+        self, reconstructor, positions_df, collateral_df, pool_state_df
+    ):
         """Test that snapshot aggregates match sum of positions"""
         snapshot = reconstructor.create_snapshot(
-            positions_df,
-            collateral_df,
-            pool_state_df
+            positions_df, collateral_df, pool_state_df
         )
 
         # Sum up position values
@@ -356,13 +377,17 @@ class TestStateReconstructor:
         assert snapshot.total_collateral_usd == total_collateral
         assert snapshot.total_debt_usd == total_debt
 
-    def test_positions_have_correct_lltv(self, reconstructor, positions_df, collateral_df):
+    def test_positions_have_correct_lltv(
+        self, reconstructor, positions_df, collateral_df
+    ):
         """Test that reconstructed positions have correct LLTV"""
         positions = reconstructor.reconstruct_positions(positions_df, collateral_df)
 
         assert all(p.lltv == 0.86 for p in positions)
 
-    def test_positions_have_timestamps(self, reconstructor, positions_df, collateral_df):
+    def test_positions_have_timestamps(
+        self, reconstructor, positions_df, collateral_df
+    ):
         """Test that positions have timestamps"""
         positions = reconstructor.reconstruct_positions(positions_df, collateral_df)
 

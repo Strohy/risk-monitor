@@ -13,17 +13,17 @@ class RiskScorer:
 
     # Configurable weights for different risk components
     DEFAULT_WEIGHTS = {
-        'utilization': 0.15,
-        'health_factor': 0.30,
-        'concentration': 0.25,
-        'stress_sensitivity': 0.30
+        "utilization": 0.15,
+        "health_factor": 0.30,
+        "concentration": 0.25,
+        "stress_sensitivity": 0.30,
     }
 
     def __init__(
         self,
         metrics: RiskMetrics,
         stress_engine: StressTestEngine = None,
-        weights: Dict[str, float] = None
+        weights: Dict[str, float] = None,
     ):
         """
         Initialize risk scorer
@@ -81,7 +81,7 @@ class RiskScorer:
             Risk score (0-100)
         """
         # Score based on weighted HF
-        if weighted_hf == float('inf'):
+        if weighted_hf == float("inf"):
             hf_score = 0
         elif weighted_hf < 1.1:
             hf_score = 100  # Critical
@@ -164,16 +164,16 @@ class RiskScorer:
         cascading = self.stress_engine.analyze_cascading_risk()
 
         # Score based on 10% price shock impact
-        shock_10_row = results_df[results_df['price_shock_pct'] == -10.0]
+        shock_10_row = results_df[results_df["price_shock_pct"] == -10.0]
         if len(shock_10_row) > 0:
-            pct_affected_10 = shock_10_row.iloc[0]['pct_pool_affected']
+            pct_affected_10 = shock_10_row.iloc[0]["pct_pool_affected"]
         else:
             pct_affected_10 = 0
 
         # Score based on 20% price shock impact
-        shock_20_row = results_df[results_df['price_shock_pct'] == -20.0]
+        shock_20_row = results_df[results_df["price_shock_pct"] == -20.0]
         if len(shock_20_row) > 0:
-            pct_affected_20 = shock_20_row.iloc[0]['pct_pool_affected']
+            pct_affected_20 = shock_20_row.iloc[0]["pct_pool_affected"]
         else:
             pct_affected_20 = 0
 
@@ -188,8 +188,8 @@ class RiskScorer:
             sensitivity_score = pct_affected_10 * 10
 
         # Cliff penalty
-        if cascading['has_severe_cliffs']:
-            cliff_penalty = min(cascading['cliff_points_count'] * 10, 30)
+        if cascading["has_severe_cliffs"]:
+            cliff_penalty = min(cascading["cliff_points_count"] * 10, 30)
         else:
             cliff_penalty = 0
 
@@ -210,16 +210,15 @@ class RiskScorer:
 
         # Calculate component scores
         scores = {
-            'utilization': self._score_utilization(all_metrics['utilization_rate']),
-            'health_factor': self._score_health_factor(
-                all_metrics['weighted_avg_health_factor'],
-                all_metrics['liquidation_buffer_10pct']
+            "utilization": self._score_utilization(all_metrics["utilization_rate"]),
+            "health_factor": self._score_health_factor(
+                all_metrics["weighted_avg_health_factor"],
+                all_metrics["liquidation_buffer_10pct"],
             ),
-            'concentration': self._score_concentration(
-                concentration['top_5_pct'],
-                all_metrics['herfindahl_index']
+            "concentration": self._score_concentration(
+                concentration["top_5_pct"], all_metrics["herfindahl_index"]
             ),
-            'stress_sensitivity': self._score_stress_sensitivity()
+            "stress_sensitivity": self._score_stress_sensitivity(),
         }
 
         # Weighted average
@@ -238,16 +237,15 @@ class RiskScorer:
         concentration = self.metrics.concentration_metrics()
 
         return {
-            'utilization': self._score_utilization(all_metrics['utilization_rate']),
-            'health_factor': self._score_health_factor(
-                all_metrics['weighted_avg_health_factor'],
-                all_metrics['liquidation_buffer_10pct']
+            "utilization": self._score_utilization(all_metrics["utilization_rate"]),
+            "health_factor": self._score_health_factor(
+                all_metrics["weighted_avg_health_factor"],
+                all_metrics["liquidation_buffer_10pct"],
             ),
-            'concentration': self._score_concentration(
-                concentration['top_5_pct'],
-                all_metrics['herfindahl_index']
+            "concentration": self._score_concentration(
+                concentration["top_5_pct"], all_metrics["herfindahl_index"]
             ),
-            'stress_sensitivity': self._score_stress_sensitivity()
+            "stress_sensitivity": self._score_stress_sensitivity(),
         }
 
     def get_risk_level(self, score: float = None) -> str:
@@ -287,14 +285,14 @@ class RiskScorer:
         level = self.get_risk_level(score)
 
         color_map = {
-            'CRITICAL': 'red',
-            'HIGH': 'orange',
-            'MODERATE': 'yellow',
-            'LOW': 'lightgreen',
-            'MINIMAL': 'green'
+            "CRITICAL": "red",
+            "HIGH": "orange",
+            "MODERATE": "yellow",
+            "LOW": "lightgreen",
+            "MINIMAL": "green",
         }
 
-        return color_map.get(level, 'gray')
+        return color_map.get(level, "gray")
 
     def generate_report(self) -> str:
         """
@@ -348,7 +346,9 @@ CRITICAL (80-100): Critical risk, immediate action required
             report += "✓ MINIMAL RISK: This pool appears very healthy.\n"
 
         # Highlight top risk factors
-        sorted_components = sorted(component_scores.items(), key=lambda x: x[1], reverse=True)
+        sorted_components = sorted(
+            component_scores.items(), key=lambda x: x[1], reverse=True
+        )
         if sorted_components[0][1] > 60:
             report += f"\nTop risk factor: {sorted_components[0][0].replace('_', ' ').title()} (score: {sorted_components[0][1]:.1f})\n"
 

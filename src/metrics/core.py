@@ -35,37 +35,35 @@ class RiskMetrics:
         """
         if not self.positions:
             return {
-                'top_5_pct': 0,
-                'top_10_pct': 0,
-                'top_5_debt_usd': 0,
-                'top_10_debt_usd': 0
+                "top_5_pct": 0,
+                "top_10_pct": 0,
+                "top_5_debt_usd": 0,
+                "top_10_debt_usd": 0,
             }
 
         # Sort by debt value
         sorted_positions = sorted(
-            self.positions,
-            key=lambda p: p.debt_value_usd,
-            reverse=True
+            self.positions, key=lambda p: p.debt_value_usd, reverse=True
         )
 
         total_debt = self.snapshot.total_debt_usd
 
         if total_debt == 0:
             return {
-                'top_5_pct': 0,
-                'top_10_pct': 0,
-                'top_5_debt_usd': 0,
-                'top_10_debt_usd': 0
+                "top_5_pct": 0,
+                "top_10_pct": 0,
+                "top_5_debt_usd": 0,
+                "top_10_debt_usd": 0,
             }
 
         top_5_debt = sum(p.debt_value_usd for p in sorted_positions[:5])
         top_10_debt = sum(p.debt_value_usd for p in sorted_positions[:10])
 
         return {
-            'top_5_pct': (top_5_debt / total_debt * 100),
-            'top_10_pct': (top_10_debt / total_debt * 100),
-            'top_5_debt_usd': top_5_debt,
-            'top_10_debt_usd': top_10_debt
+            "top_5_pct": (top_5_debt / total_debt * 100),
+            "top_10_pct": (top_10_debt / total_debt * 100),
+            "top_5_debt_usd": top_5_debt,
+            "top_10_debt_usd": top_10_debt,
         }
 
     def gini_coefficient(self) -> float:
@@ -86,7 +84,9 @@ class RiskMetrics:
 
         # Calculate Gini coefficient
         index = np.arange(1, n + 1)
-        return (2 * np.sum(index * debt_values)) / (n * np.sum(debt_values)) - (n + 1) / n
+        return (2 * np.sum(index * debt_values)) / (n * np.sum(debt_values)) - (
+            n + 1
+        ) / n
 
     def herfindahl_index(self) -> float:
         """
@@ -105,7 +105,7 @@ class RiskMetrics:
 
         # Calculate market shares and sum of squares
         market_shares = [(p.debt_value_usd / total_debt * 100) for p in self.positions]
-        hhi = sum(share ** 2 for share in market_shares)
+        hhi = sum(share**2 for share in market_shares)
 
         return hhi
 
@@ -119,17 +119,17 @@ class RiskMetrics:
             Weighted average HF (inf if no debt)
         """
         if not self.positions:
-            return float('inf')
+            return float("inf")
 
         total_debt = sum(p.debt_value_usd for p in self.positions)
 
         if total_debt == 0:
-            return float('inf')
+            return float("inf")
 
         weighted_sum = sum(
             p.health_factor * p.debt_value_usd
             for p in self.positions
-            if p.health_factor != float('inf')
+            if p.health_factor != float("inf")
         )
 
         return weighted_sum / total_debt
@@ -143,30 +143,30 @@ class RiskMetrics:
         """
         if not self.positions:
             return {
-                'hf_below_1.05': 0,
-                'hf_1.05_to_1.1': 0,
-                'hf_1.1_to_1.2': 0,
-                'hf_1.2_to_1.5': 0,
-                'hf_above_1.5': 0
+                "hf_below_1.05": 0,
+                "hf_1.05_to_1.1": 0,
+                "hf_1.1_to_1.2": 0,
+                "hf_1.2_to_1.5": 0,
+                "hf_above_1.5": 0,
             }
 
         total_debt = self.snapshot.total_debt_usd
 
         if total_debt == 0:
             return {
-                'hf_below_1.05': 0,
-                'hf_1.05_to_1.1': 0,
-                'hf_1.1_to_1.2': 0,
-                'hf_1.2_to_1.5': 0,
-                'hf_above_1.5': 0
+                "hf_below_1.05": 0,
+                "hf_1.05_to_1.1": 0,
+                "hf_1.1_to_1.2": 0,
+                "hf_1.2_to_1.5": 0,
+                "hf_above_1.5": 0,
             }
 
         buckets = {
-            'hf_below_1.05': 0,
-            'hf_1.05_to_1.1': 0,
-            'hf_1.1_to_1.2': 0,
-            'hf_1.2_to_1.5': 0,
-            'hf_above_1.5': 0
+            "hf_below_1.05": 0,
+            "hf_1.05_to_1.1": 0,
+            "hf_1.1_to_1.2": 0,
+            "hf_1.2_to_1.5": 0,
+            "hf_above_1.5": 0,
         }
 
         for p in self.positions:
@@ -174,15 +174,15 @@ class RiskMetrics:
             debt = p.debt_value_usd
 
             if hf < 1.05:
-                buckets['hf_below_1.05'] += debt
+                buckets["hf_below_1.05"] += debt
             elif hf < 1.1:
-                buckets['hf_1.05_to_1.1'] += debt
+                buckets["hf_1.05_to_1.1"] += debt
             elif hf < 1.2:
-                buckets['hf_1.1_to_1.2'] += debt
+                buckets["hf_1.1_to_1.2"] += debt
             elif hf < 1.5:
-                buckets['hf_1.2_to_1.5'] += debt
+                buckets["hf_1.2_to_1.5"] += debt
             else:
-                buckets['hf_above_1.5'] += debt
+                buckets["hf_above_1.5"] += debt
 
         # Convert to percentages
         return {k: (v / total_debt * 100) for k, v in buckets.items()}
@@ -206,12 +206,10 @@ class RiskMetrics:
             return 0.0
 
         at_risk_debt = sum(
-            p.debt_value_usd
-            for p in self.positions
-            if p.health_factor < threshold
+            p.debt_value_usd for p in self.positions if p.health_factor < threshold
         )
 
-        return (at_risk_debt / total_debt * 100)
+        return at_risk_debt / total_debt * 100
 
     def positions_at_risk(self, threshold: float = 1.1) -> List[Position]:
         """
@@ -223,10 +221,7 @@ class RiskMetrics:
         Returns:
             List of at-risk positions, sorted by health factor
         """
-        at_risk = [
-            p for p in self.positions
-            if p.health_factor < threshold
-        ]
+        at_risk = [p for p in self.positions if p.health_factor < threshold]
 
         return sorted(at_risk, key=lambda p: p.health_factor)
 
@@ -241,34 +236,34 @@ class RiskMetrics:
         """
         if not self.positions:
             return {
-                'micro_below_10k': 0,
-                'small_10k_to_100k': 0,
-                'medium_100k_to_1m': 0,
-                'large_1m_to_10m': 0,
-                'whale_above_10m': 0
+                "micro_below_10k": 0,
+                "small_10k_to_100k": 0,
+                "medium_100k_to_1m": 0,
+                "large_1m_to_10m": 0,
+                "whale_above_10m": 0,
             }
 
         buckets = {
-            'micro_below_10k': 0,
-            'small_10k_to_100k': 0,
-            'medium_100k_to_1m': 0,
-            'large_1m_to_10m': 0,
-            'whale_above_10m': 0
+            "micro_below_10k": 0,
+            "small_10k_to_100k": 0,
+            "medium_100k_to_1m": 0,
+            "large_1m_to_10m": 0,
+            "whale_above_10m": 0,
         }
 
         for p in self.positions:
             debt_usd = p.debt_value_usd
 
             if debt_usd < 10_000:
-                buckets['micro_below_10k'] += 1
+                buckets["micro_below_10k"] += 1
             elif debt_usd < 100_000:
-                buckets['small_10k_to_100k'] += 1
+                buckets["small_10k_to_100k"] += 1
             elif debt_usd < 1_000_000:
-                buckets['medium_100k_to_1m'] += 1
+                buckets["medium_100k_to_1m"] += 1
             elif debt_usd < 10_000_000:
-                buckets['large_1m_to_10m'] += 1
+                buckets["large_1m_to_10m"] += 1
             else:
-                buckets['whale_above_10m'] += 1
+                buckets["whale_above_10m"] += 1
 
         return buckets
 
@@ -287,32 +282,30 @@ class RiskMetrics:
 
         return {
             # Pool-level metrics
-            'utilization_rate': self.utilization_rate(),
-            'total_positions': len(self.positions),
-            'total_debt_usd': self.snapshot.total_debt_usd,
-            'total_collateral_usd': self.snapshot.total_collateral_usd,
-
+            "utilization_rate": self.utilization_rate(),
+            "total_positions": len(self.positions),
+            "total_debt_usd": self.snapshot.total_debt_usd,
+            "total_collateral_usd": self.snapshot.total_collateral_usd,
             # Concentration metrics
-            'top_5_concentration_pct': concentration['top_5_pct'],
-            'top_10_concentration_pct': concentration['top_10_pct'],
-            'top_5_debt_usd': concentration['top_5_debt_usd'],
-            'top_10_debt_usd': concentration['top_10_debt_usd'],
-            'gini_coefficient': self.gini_coefficient(),
-            'herfindahl_index': self.herfindahl_index(),
-
+            "top_5_concentration_pct": concentration["top_5_pct"],
+            "top_10_concentration_pct": concentration["top_10_pct"],
+            "top_5_debt_usd": concentration["top_5_debt_usd"],
+            "top_10_debt_usd": concentration["top_10_debt_usd"],
+            "gini_coefficient": self.gini_coefficient(),
+            "herfindahl_index": self.herfindahl_index(),
             # Health factor metrics
-            'weighted_avg_health_factor': self.weighted_avg_health_factor(),
-            'debt_below_hf_1_05_pct': hf_dist['hf_below_1.05'],
-            'debt_below_hf_1_1_pct': hf_dist['hf_below_1.05'] + hf_dist['hf_1.05_to_1.1'],
-            'liquidation_buffer_10pct': self.liquidation_buffer_percentage(1.1),
-            'positions_at_risk_count': len(self.positions_at_risk(1.1)),
-
+            "weighted_avg_health_factor": self.weighted_avg_health_factor(),
+            "debt_below_hf_1_05_pct": hf_dist["hf_below_1.05"],
+            "debt_below_hf_1_1_pct": hf_dist["hf_below_1.05"]
+            + hf_dist["hf_1.05_to_1.1"],
+            "liquidation_buffer_10pct": self.liquidation_buffer_percentage(1.1),
+            "positions_at_risk_count": len(self.positions_at_risk(1.1)),
             # Position size distribution
-            'micro_positions': size_dist['micro_below_10k'],
-            'small_positions': size_dist['small_10k_to_100k'],
-            'medium_positions': size_dist['medium_100k_to_1m'],
-            'large_positions': size_dist['large_1m_to_10m'],
-            'whale_positions': size_dist['whale_above_10m'],
+            "micro_positions": size_dist["micro_below_10k"],
+            "small_positions": size_dist["small_10k_to_100k"],
+            "medium_positions": size_dist["medium_100k_to_1m"],
+            "large_positions": size_dist["large_1m_to_10m"],
+            "whale_positions": size_dist["whale_above_10m"],
         }
 
     def summary_report(self) -> str:

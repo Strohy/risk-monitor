@@ -34,7 +34,9 @@ class MorphoDataFetcher:
         # Load query IDs from config if using query ID mode
         if self.use_query_ids:
             self.query_ids = self._load_query_ids()
-            logger.info(f"Initialized Dune client (using query IDs: {list(self.query_ids.keys())})")
+            logger.info(
+                f"Initialized Dune client (using query IDs: {list(self.query_ids.keys())})"
+            )
         else:
             self.query_ids = {}
             logger.info("Initialized Dune client (dynamic query creation mode)")
@@ -45,13 +47,15 @@ class MorphoDataFetcher:
 
         if not config_path.exists():
             logger.warning(f"Query IDs config not found: {config_path}")
-            logger.warning("Falling back to dynamic query creation (may not work on free tier)")
+            logger.warning(
+                "Falling back to dynamic query creation (may not work on free tier)"
+            )
             return {}
 
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
-        query_ids = config.get('queries', {})
+        query_ids = config.get("queries", {})
 
         # Check if any IDs are null/None
         missing = [k for k, v in query_ids.items() if v is None]
@@ -62,7 +66,9 @@ class MorphoDataFetcher:
 
         return query_ids
 
-    def _execute_query_by_id(self, query_key: str, params: List[QueryParameter] = None) -> pd.DataFrame:
+    def _execute_query_by_id(
+        self, query_key: str, params: List[QueryParameter] = None
+    ) -> pd.DataFrame:
         """
         Execute a pre-created query using its ID
 
@@ -82,11 +88,7 @@ class MorphoDataFetcher:
 
         try:
             # Create QueryBase with the pre-existing query ID
-            query = QueryBase(
-                query_id=query_id,
-                name=query_key,
-                params=params or []
-            )
+            query = QueryBase(query_id=query_id, name=query_key, params=params or [])
 
             logger.info(f"Executing query '{query_key}' (ID: {query_id})...")
             results = self.client.run_query_dataframe(query)
@@ -98,7 +100,9 @@ class MorphoDataFetcher:
             logger.error(f"Error executing query '{query_key}' (ID: {query_id}): {e}")
             return pd.DataFrame()
 
-    def _execute_custom_query(self, query_sql: str, query_name: str = "Custom Query") -> pd.DataFrame:
+    def _execute_custom_query(
+        self, query_sql: str, query_name: str = "Custom Query"
+    ) -> pd.DataFrame:
         """
         Execute a custom SQL query using Dune API
 
@@ -114,9 +118,7 @@ class MorphoDataFetcher:
         try:
             # Create a query on Dune - returns a query object with .base.query_id
             query_obj = self.client.create_query(
-                name=query_name,
-                query_sql=query_sql,
-                is_private=False
+                name=query_name, query_sql=query_sql, is_private=False
             )
 
             # Extract the query_id from the returned object
@@ -179,13 +181,17 @@ class MorphoDataFetcher:
         if self.use_query_ids:
             # Use pre-created query with ID and parameters
             params = [
-                QueryParameter.text_type(name="market_ids", value=self._format_market_ids(market_ids))
+                QueryParameter.text_type(
+                    name="market_ids", value=self._format_market_ids(market_ids)
+                )
             ]
             result = self._execute_query_by_id("pool_state", params=params)
         else:
             # Dynamic query creation (may not work on free tier)
             query_sql = self._load_query("pool_state")
-            query_sql = query_sql.replace("{{market_ids}}", self._format_market_ids(market_ids))
+            query_sql = query_sql.replace(
+                "{{market_ids}}", self._format_market_ids(market_ids)
+            )
             result = self._execute_custom_query(query_sql, "Pool State")
 
         logger.info(f"Retrieved {len(result)} pool state records")
@@ -205,12 +211,16 @@ class MorphoDataFetcher:
 
         if self.use_query_ids:
             params = [
-                QueryParameter.text_type(name="market_ids", value=self._format_market_ids(market_ids))
+                QueryParameter.text_type(
+                    name="market_ids", value=self._format_market_ids(market_ids)
+                )
             ]
             result = self._execute_query_by_id("positions", params=params)
         else:
             query_sql = self._load_query("positions")
-            query_sql = query_sql.replace("{{market_ids}}", self._format_market_ids(market_ids))
+            query_sql = query_sql.replace(
+                "{{market_ids}}", self._format_market_ids(market_ids)
+            )
             result = self._execute_custom_query(query_sql, "Open Positions")
 
         logger.info(f"Retrieved {len(result)} open positions")
@@ -230,12 +240,16 @@ class MorphoDataFetcher:
 
         if self.use_query_ids:
             params = [
-                QueryParameter.text_type(name="market_ids", value=self._format_market_ids(market_ids))
+                QueryParameter.text_type(
+                    name="market_ids", value=self._format_market_ids(market_ids)
+                )
             ]
             result = self._execute_query_by_id("collateral", params=params)
         else:
             query_sql = self._load_query("collateral")
-            query_sql = query_sql.replace("{{market_ids}}", self._format_market_ids(market_ids))
+            query_sql = query_sql.replace(
+                "{{market_ids}}", self._format_market_ids(market_ids)
+            )
             result = self._execute_custom_query(query_sql, "Collateral Balances")
 
         logger.info(f"Retrieved {len(result)} collateral records")
@@ -256,12 +270,16 @@ class MorphoDataFetcher:
 
         if self.use_query_ids:
             params = [
-                QueryParameter.text_type(name="market_ids", value=self._format_market_ids(market_ids))
+                QueryParameter.text_type(
+                    name="market_ids", value=self._format_market_ids(market_ids)
+                )
             ]
             result = self._execute_query_by_id("liquidations", params=params)
         else:
             query_sql = self._load_query("liquidations")
-            query_sql = query_sql.replace("{{market_ids}}", self._format_market_ids(market_ids))
+            query_sql = query_sql.replace(
+                "{{market_ids}}", self._format_market_ids(market_ids)
+            )
             result = self._execute_custom_query(query_sql, "Historical Liquidations")
 
         logger.info(f"Retrieved {len(result)} liquidation events")
@@ -281,7 +299,10 @@ class MorphoDataFetcher:
 
         if self.use_query_ids:
             params = [
-                QueryParameter.text_type(name="token_addresses", value=self._format_addresses(token_addresses))
+                QueryParameter.text_type(
+                    name="token_addresses",
+                    value=self._format_addresses(token_addresses),
+                )
             ]
             df = self._execute_query_by_id("prices", params=params)
         else:

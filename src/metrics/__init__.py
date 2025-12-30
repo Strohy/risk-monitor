@@ -2,4 +2,4 @@
 
 from .core import RiskMetrics
 
-__all__ = ['RiskMetrics']
+__all__ = ["RiskMetrics"]

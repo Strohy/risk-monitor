@@ -23,7 +23,7 @@ def sample_positions():
             debt_value_usd=4300.0,  # HF = (10000 * 0.86) / 4300 = 2.0
             health_factor=2.0,
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         ),
         # Position 2: Moderate (HF = 1.5)
         Position(
@@ -35,7 +35,7 @@ def sample_positions():
             debt_value_usd=2867.0,  # HF = (5000 * 0.86) / 2867 = 1.5
             health_factor=1.5,
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         ),
         # Position 3: At risk (HF = 1.1)
         Position(
@@ -47,7 +47,7 @@ def sample_positions():
             debt_value_usd=2345.0,  # HF = (3000 * 0.86) / 2345 = 1.1
             health_factor=1.1,
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         ),
         # Position 4: Critical (HF = 1.05)
         Position(
@@ -59,7 +59,7 @@ def sample_positions():
             debt_value_usd=1638.0,  # HF = (2000 * 0.86) / 1638 = 1.05
             health_factor=1.05,
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         ),
     ]
 
@@ -76,7 +76,7 @@ def sample_snapshot(sample_positions):
         total_supply=20000.0,
         total_borrow=total_debt,
         utilization=total_debt / 20000.0,
-        lltv=0.86
+        lltv=0.86,
     )
 
 
@@ -146,7 +146,7 @@ class TestStressResultModel:
             total_debt_at_risk_usd=8000.0,
             bad_debt_potential_usd=500.0,
             pct_pool_affected=25.0,
-            positions_details=[]
+            positions_details=[],
         )
 
         assert result.scenario_name == "-10% shock"
@@ -163,14 +163,14 @@ class TestStressResultModel:
             total_debt_at_risk_usd=8000.0,
             bad_debt_potential_usd=500.0,
             pct_pool_affected=25.0,
-            positions_details=[{'borrower': '0x123'}]
+            positions_details=[{"borrower": "0x123"}],
         )
 
         result_dict = result.to_dict()
 
-        assert 'scenario_name' in result_dict
-        assert 'liquidatable_positions' in result_dict
-        assert result_dict['positions_count'] == 1
+        assert "scenario_name" in result_dict
+        assert "liquidatable_positions" in result_dict
+        assert result_dict["positions_count"] == 1
 
     def test_stress_result_summary(self):
         """Test StressResult summary generation"""
@@ -182,7 +182,7 @@ class TestStressResultModel:
             total_debt_at_risk_usd=8000.0,
             bad_debt_potential_usd=500.0,
             pct_pool_affected=25.0,
-            positions_details=[]
+            positions_details=[],
         )
 
         summary = result.summary()
@@ -202,10 +202,10 @@ class TestRunAllScenarios:
         results_df = engine.run_all_scenarios()
 
         assert len(results_df) == 7  # Default 7 scenarios
-        assert 'price_shock_pct' in results_df.columns
-        assert 'liquidatable_positions' in results_df.columns
-        assert 'debt_at_risk_usd' in results_df.columns
-        assert 'pct_pool_affected' in results_df.columns
+        assert "price_shock_pct" in results_df.columns
+        assert "liquidatable_positions" in results_df.columns
+        assert "debt_at_risk_usd" in results_df.columns
+        assert "pct_pool_affected" in results_df.columns
 
     def test_results_progressive(self, sample_snapshot):
         """Test that worse shocks cause more liquidations"""
@@ -216,8 +216,8 @@ class TestRunAllScenarios:
         # More severe shocks should generally have more liquidations
         prev_positions = -1
         for _, row in results_df.iterrows():
-            assert row['liquidatable_positions'] >= prev_positions
-            prev_positions = row['liquidatable_positions']
+            assert row["liquidatable_positions"] >= prev_positions
+            prev_positions = row["liquidatable_positions"]
 
     def test_custom_scenarios_results(self, sample_snapshot):
         """Test custom scenarios produce correct number of results"""
@@ -244,7 +244,7 @@ class TestCliffPointDetection:
                 debt_value_usd=1000.0 * 0.86 / (1.0 + i * 0.1),
                 health_factor=1.0 + i * 0.1,
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             for i in range(10)
         ]
@@ -257,7 +257,7 @@ class TestCliffPointDetection:
             total_supply=10000.0,
             total_borrow=5000.0,
             utilization=0.5,
-            lltv=0.86
+            lltv=0.86,
         )
 
         engine = StressTestEngine(snapshot)
@@ -279,7 +279,7 @@ class TestCliffPointDetection:
                 debt_value_usd=5733.0,  # HF = 1.5
                 health_factor=1.5,
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             for i in range(10)
         ]
@@ -292,7 +292,7 @@ class TestCliffPointDetection:
             total_supply=100000.0,
             total_borrow=57330.0,
             utilization=0.57,
-            lltv=0.86
+            lltv=0.86,
         )
 
         engine = StressTestEngine(snapshot)
@@ -304,10 +304,10 @@ class TestCliffPointDetection:
         if cliffs:
             # Check cliff structure
             cliff = cliffs[0]
-            assert 'from_shock_pct' in cliff
-            assert 'to_shock_pct' in cliff
-            assert 'risk_jump_pct' in cliff
-            assert 'new_liquidations' in cliff
+            assert "from_shock_pct" in cliff
+            assert "to_shock_pct" in cliff
+            assert "risk_jump_pct" in cliff
+            assert "new_liquidations" in cliff
 
 
 class TestLiquidationThreshold:
@@ -347,7 +347,7 @@ class TestLiquidationThreshold:
                 debt_value_usd=1000.0,
                 health_factor=8.6,  # Very high HF
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             for i in range(5)
         ]
@@ -360,7 +360,7 @@ class TestLiquidationThreshold:
             total_supply=50000.0,
             total_borrow=5000.0,
             utilization=0.1,
-            lltv=0.86
+            lltv=0.86,
         )
 
         engine = StressTestEngine(snapshot)
@@ -380,11 +380,11 @@ class TestCascadingRiskAnalysis:
         engine = StressTestEngine(sample_snapshot)
         cascading = engine.analyze_cascading_risk()
 
-        assert 'cliff_points_count' in cascading
-        assert 'avg_risk_increase_per_scenario' in cascading
-        assert 'max_risk_increase_per_scenario' in cascading
-        assert 'has_severe_cliffs' in cascading
-        assert isinstance(cascading['has_severe_cliffs'], bool)
+        assert "cliff_points_count" in cascading
+        assert "avg_risk_increase_per_scenario" in cascading
+        assert "max_risk_increase_per_scenario" in cascading
+        assert "has_severe_cliffs" in cascading
+        assert isinstance(cascading["has_severe_cliffs"], bool)
 
     def test_cascading_risk_metrics(self, sample_snapshot):
         """Test cascading risk metrics are valid"""
@@ -392,8 +392,8 @@ class TestCascadingRiskAnalysis:
         cascading = engine.analyze_cascading_risk()
 
         # Metrics should be non-negative
-        assert cascading['cliff_points_count'] >= 0
-        assert cascading['avg_risk_increase_per_scenario'] >= 0
+        assert cascading["cliff_points_count"] >= 0
+        assert cascading["avg_risk_increase_per_scenario"] >= 0
 
 
 class TestSummaryGeneration:
@@ -422,7 +422,7 @@ class TestSummaryGeneration:
                 debt_value_usd=5733.0,  # HF = 1.5
                 health_factor=1.5,
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             for i in range(5)
         ]
@@ -435,7 +435,7 @@ class TestSummaryGeneration:
             total_supply=50000.0,
             total_borrow=28665.0,
             utilization=0.57,
-            lltv=0.86
+            lltv=0.86,
         )
 
         engine = StressTestEngine(snapshot)
@@ -459,7 +459,7 @@ class TestEdgeCases:
             total_supply=0.0,
             total_borrow=0.0,
             utilization=0.0,
-            lltv=0.86
+            lltv=0.86,
         )
 
         engine = StressTestEngine(empty_snapshot)
@@ -480,7 +480,7 @@ class TestEdgeCases:
                 debt_value_usd=500.0,
                 health_factor=1.72,
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
         ]
 
@@ -492,7 +492,7 @@ class TestEdgeCases:
             total_supply=1000.0,
             total_borrow=500.0,
             utilization=0.5,
-            lltv=0.86
+            lltv=0.86,
         )
 
         engine = StressTestEngine(snapshot)
@@ -501,4 +501,6 @@ class TestEdgeCases:
         assert len(results) == 7
         # All results should be either 0% or 100% affected
         for _, row in results.iterrows():
-            assert row['pct_pool_affected'] in [0.0, 100.0] or pytest.approx(row['pct_pool_affected'], abs=0.1) in [0.0, 100.0]
+            assert row["pct_pool_affected"] in [0.0, 100.0] or pytest.approx(
+                row["pct_pool_affected"], abs=0.1
+            ) in [0.0, 100.0]

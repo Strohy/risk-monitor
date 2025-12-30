@@ -23,7 +23,7 @@ def healthy_positions():
             debt_value_usd=2000.0,
             health_factor=4.3,  # Very healthy
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
         for i in range(10)
     ]
@@ -42,7 +42,7 @@ def risky_positions():
             debt_value_usd=900.0,
             health_factor=1.06,  # Close to liquidation
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
         for i in range(10)
     ]
@@ -62,7 +62,7 @@ def concentrated_positions():
             debt_value_usd=50000.0,  # 90% of total debt
             health_factor=1.72,
             lltv=0.86,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
     ]
     # Add small positions
@@ -77,7 +77,7 @@ def concentrated_positions():
                 debt_value_usd=555.0,  # ~10% of total debt total
                 health_factor=1.55,
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
         )
     return positions
@@ -95,7 +95,7 @@ def healthy_snapshot(healthy_positions):
         total_supply=100000.0,
         total_borrow=total_debt,
         utilization=total_debt / 100000.0,
-        lltv=0.86
+        lltv=0.86,
     )
 
 
@@ -111,7 +111,7 @@ def risky_snapshot(risky_positions):
         total_supply=10000.0,
         total_borrow=total_debt,
         utilization=total_debt / 10000.0,
-        lltv=0.86
+        lltv=0.86,
     )
 
 
@@ -127,7 +127,7 @@ def concentrated_snapshot(concentrated_positions):
         total_supply=100000.0,
         total_borrow=total_debt,
         utilization=total_debt / 100000.0,
-        lltv=0.86
+        lltv=0.86,
     )
 
 
@@ -155,10 +155,10 @@ class TestRiskScorerBasic:
         """Test custom weights"""
         metrics = RiskMetrics(healthy_snapshot)
         custom_weights = {
-            'utilization': 0.25,
-            'health_factor': 0.25,
-            'concentration': 0.25,
-            'stress_sensitivity': 0.25
+            "utilization": 0.25,
+            "health_factor": 0.25,
+            "concentration": 0.25,
+            "stress_sensitivity": 0.25,
         }
         scorer = RiskScorer(metrics, weights=custom_weights)
 
@@ -168,10 +168,10 @@ class TestRiskScorerBasic:
         """Test that invalid weights raise error"""
         metrics = RiskMetrics(healthy_snapshot)
         invalid_weights = {
-            'utilization': 0.5,
-            'health_factor': 0.3,
-            'concentration': 0.3,
-            'stress_sensitivity': 0.3  # Sum = 1.4
+            "utilization": 0.5,
+            "health_factor": 0.3,
+            "concentration": 0.3,
+            "stress_sensitivity": 0.3,  # Sum = 1.4
         }
 
         with pytest.raises(ValueError):
@@ -276,7 +276,7 @@ class TestConcentrationScoring:
         scorer = RiskScorer(metrics)
 
         concentration = metrics.concentration_metrics()
-        top_5_pct = concentration['top_5_pct']
+        top_5_pct = concentration["top_5_pct"]
         herfindahl = metrics.herfindahl_index()
 
         score = scorer._score_concentration(top_5_pct, herfindahl)
@@ -352,10 +352,10 @@ class TestCompositeScore:
 
         components = scorer.get_component_scores()
 
-        assert 'utilization' in components
-        assert 'health_factor' in components
-        assert 'concentration' in components
-        assert 'stress_sensitivity' in components
+        assert "utilization" in components
+        assert "health_factor" in components
+        assert "concentration" in components
+        assert "stress_sensitivity" in components
 
         # All scores should be 0-100
         for score in components.values():
@@ -486,7 +486,7 @@ class TestEdgeCases:
             total_supply=0.0,
             total_borrow=0.0,
             utilization=0.0,
-            lltv=0.86
+            lltv=0.86,
         )
 
         metrics = RiskMetrics(empty_snapshot)
@@ -508,7 +508,7 @@ class TestEdgeCases:
                 debt_value_usd=500.0,
                 health_factor=1.72,
                 lltv=0.86,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
         ]
 
@@ -520,7 +520,7 @@ class TestEdgeCases:
             total_supply=1000.0,
             total_borrow=500.0,
             utilization=0.5,
-            lltv=0.86
+            lltv=0.86,
         )
 
         metrics = RiskMetrics(snapshot)
@@ -552,8 +552,7 @@ class TestWeightedScoring:
 
         # Calculate expected composite
         expected = sum(
-            component_scores[k] * scorer.weights[k]
-            for k in component_scores
+            component_scores[k] * scorer.weights[k] for k in component_scores
         )
 
         assert composite == pytest.approx(expected, abs=0.1)
