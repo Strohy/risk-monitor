@@ -66,35 +66,48 @@ class MarkdownReportGenerator:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
         # Create images directory for this timestamp
-        images_dir = pool_dir / "images" / timestamp
-        images_dir.mkdir(parents=True, exist_ok=True)
+        images_dir_timestamped = pool_dir / "images" / timestamp
+        images_dir_timestamped.mkdir(parents=True, exist_ok=True)
 
-        # Generate charts
-        chart_gen = ChartGenerator(images_dir)
+        # Create/overwrite latest images directory
+        images_dir_latest = pool_dir / "images" / "latest"
+        images_dir_latest.mkdir(parents=True, exist_ok=True)
+
+        # Generate concentration metrics once
         concentration = risk_metrics.concentration_metrics()
-        charts = chart_gen.generate_all_charts(snapshot, stress_engine, concentration)
-
-        # Update content with chart references (relative to markdown file location)
-        content = self._add_chart_references(content, timestamp, charts)
 
         timestamped_path = None
         latest_path = None
 
         # Save timestamped version
         if save_timestamped:
+            # Generate charts for timestamped version
+            chart_gen = ChartGenerator(images_dir_timestamped)
+            charts = chart_gen.generate_all_charts(snapshot, stress_engine, concentration)
+
+            # Update content with timestamped chart references
+            content_timestamped = self._add_chart_references(content, timestamp, charts)
+
             filename = f"{timestamp}.md"
             timestamped_path = pool_dir / filename
 
             with open(timestamped_path, "w", encoding="utf-8") as f:
-                f.write(content)
+                f.write(content_timestamped)
 
-        # Save latest version (with same chart references pointing to timestamped images)
+        # Save latest version with charts in latest directory
         if save_latest:
+            # Generate charts for latest version (overwriting previous latest)
+            chart_gen_latest = ChartGenerator(images_dir_latest)
+            charts_latest = chart_gen_latest.generate_all_charts(snapshot, stress_engine, concentration)
+
+            # Update content with latest chart references
+            content_latest = self._add_chart_references(content, "latest", charts_latest)
+
             filename = "latest.md"
             latest_path = pool_dir / filename
 
             with open(latest_path, "w", encoding="utf-8") as f:
-                f.write(content)
+                f.write(content_latest)
 
         return timestamped_path, latest_path
 
