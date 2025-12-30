@@ -1,9 +1,11 @@
 """Tests for Dune Analytics client"""
 
-import pytest
-import pandas as pd
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pandas as pd
+import pytest
+
 from src.data.dune_client import MorphoDataFetcher
 
 

@@ -3,7 +3,7 @@ Stress Testing Models - Data structures for stress test results
 """
 
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict, List
 
 
 @dataclass

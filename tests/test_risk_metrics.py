@@ -2,10 +2,12 @@
 Tests for Risk Metrics Engine
 """
 
-import pytest
 from datetime import datetime
-from src.state.models import Position, PoolSnapshot
+
+import pytest
+
 from src.metrics.core import RiskMetrics
+from src.state.models import PoolSnapshot, Position
 
 
 @pytest.fixture

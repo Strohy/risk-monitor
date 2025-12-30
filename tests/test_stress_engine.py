@@ -2,9 +2,11 @@
 Tests for Stress Testing Engine
 """
 
-import pytest
 from datetime import datetime
-from src.state.models import Position, PoolSnapshot
+
+import pytest
+
+from src.state.models import PoolSnapshot, Position
 from src.stress.engine import StressTestEngine
 from src.stress.models import StressResult
 

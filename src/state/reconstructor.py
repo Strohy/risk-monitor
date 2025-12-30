@@ -1,11 +1,12 @@
 """State reconstruction from raw Dune data"""
 
-import pandas as pd
-from typing import List, Dict, Optional
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Dict, List, Optional
 
-from .models import Position, PoolSnapshot
+import pandas as pd
+
+from .models import PoolSnapshot, Position
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

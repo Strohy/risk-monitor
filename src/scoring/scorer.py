@@ -3,7 +3,9 @@ Risk Scoring Framework - Calculates composite risk scores
 """
 
 from typing import Dict
+
 import pandas as pd
+
 from ..metrics.core import RiskMetrics
 from ..stress.engine import StressTestEngine
 

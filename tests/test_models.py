@@ -1,8 +1,10 @@
 """Tests for Position and PoolSnapshot models"""
 
-import pytest
 from datetime import datetime
-from src.state.models import Position, PoolSnapshot
+
+import pytest
+
+from src.state.models import PoolSnapshot, Position
 
 
 class TestPosition:

@@ -1,14 +1,15 @@
 """Dune Analytics API client for fetching Morpho Blue data"""
 
+import logging
+import os
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import pandas as pd
+import yaml
 from dune_client.client import DuneClient
 from dune_client.query import QueryBase
 from dune_client.types import QueryParameter
-import pandas as pd
-import yaml
-from typing import List, Dict, Optional
-import os
-from pathlib import Path
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

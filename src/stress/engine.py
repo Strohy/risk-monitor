@@ -2,9 +2,11 @@
 Stress Testing Engine - Simulates price shocks and liquidation scenarios
 """
 
+from typing import Dict, List
+
 import pandas as pd
-from typing import List, Dict
-from ..state.models import Position, PoolSnapshot
+
+from ..state.models import PoolSnapshot, Position
 from .models import StressResult
 
 

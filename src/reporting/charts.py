@@ -3,13 +3,15 @@
 import matplotlib
 
 matplotlib.use("Agg")  # Use non-interactive backend
+from pathlib import Path
+from typing import Dict, List
+
 import matplotlib.pyplot as plt
 import numpy as np
-from pathlib import Path
-from typing import List, Dict
+import pandas as pd
+
 from ..state.models import PoolSnapshot
 from ..stress.engine import StressTestEngine
-import pandas as pd
 
 
 class ChartGenerator:

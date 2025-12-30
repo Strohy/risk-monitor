@@ -3,12 +3,14 @@
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from ..state.models import PoolSnapshot
-from ..metrics.core import RiskMetrics
-from ..stress.engine import StressTestEngine
-from ..scoring.scorer import RiskScorer
-from .charts import ChartGenerator
+
 import pandas as pd
+
+from ..metrics.core import RiskMetrics
+from ..scoring.scorer import RiskScorer
+from ..state.models import PoolSnapshot
+from ..stress.engine import StressTestEngine
+from .charts import ChartGenerator
 
 
 class MarkdownReportGenerator:
